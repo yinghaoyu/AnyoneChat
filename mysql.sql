@@ -49,6 +49,110 @@ INSERT INTO `friend_apply` VALUES (63, 1019, 1002, 1);
 INSERT INTO `friend_apply` VALUES (64, 1032, 1035, 0);
 
 -- ----------------------------
+-- Table structure for chat_message
+-- ----------------------------
+CREATE TABLE `chat_message` (
+  `message_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `thread_id`  BIGINT UNSIGNED NOT NULL,
+  `sender_id`  BIGINT UNSIGNED NOT NULL,
+  `recv_id`    BIGINT UNSIGNED NOT NULL,
+  `content`    TEXT        NOT NULL,
+  `created_at` TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `status`     TINYINT     NOT NULL DEFAULT 0 COMMENT '0=未读 1=已读 2=撤回',
+  PRIMARY KEY (`message_id`),
+  KEY `idx_thread_created` (`thread_id`, `created_at`),
+  KEY `idx_thread_message` (`thread_id`, `message_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------
+-- Records of chat_message
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for chat_thread
+-- ----------------------------
+CREATE TABLE chat_thread (
+  `id`          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `type`        ENUM('private','group') NOT NULL,
+  `created_at`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+);
+
+-- ----------------------------
+-- Records of chat_thread
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for private_chat
+-- ----------------------------
+CREATE TABLE `private_chat` (
+  `thread_id`   BIGINT UNSIGNED NOT NULL COMMENT '引用chat_thread.id',
+  `user1_id`    BIGINT UNSIGNED NOT NULL,
+  `user2_id`    BIGINT UNSIGNED NOT NULL,
+  `created_at`  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`thread_id`),
+  UNIQUE KEY `uniq_private_thread` (`user1_id`, `user2_id`), -- 保证每对用户只能有一个私聊会话
+  -- 以下两行就是我们要额外加的复合索引
+  KEY `idx_private_user1_thread` (`user1_id`, `thread_id`),
+  KEY `idx_private_user2_thread` (`user2_id`, `thread_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ----------------------------
+-- Records of private_chat
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for group_chat
+-- ----------------------------
+DROP TABLE IF EXISTS `group_chat`;
+CREATE TABLE `group_chat`  (
+  `thread_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '群聊名称',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`thread_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of group_chat
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for group_chat_member
+-- ----------------------------
+DROP TABLE IF EXISTS `group_chat_member`;
+CREATE TABLE `group_chat_member`  (
+  `thread_id` bigint UNSIGNED NOT NULL COMMENT '引用 group_chat_thread.thread_id',
+  `user_id` bigint UNSIGNED NOT NULL COMMENT '引用 user.user_id',
+  `role` tinyint NOT NULL DEFAULT 0 COMMENT '0=普通成员,1=管理员,2=创建者',
+  `joined_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `muted_until` timestamp NULL DEFAULT NULL COMMENT '如果被禁言，可存到什么时候',
+  PRIMARY KEY (`thread_id`, `user_id`) USING BTREE,
+  INDEX `idx_user_threads`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of group_chat_member
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for private_chat
+-- ----------------------------
+DROP TABLE IF EXISTS `private_chat`;
+CREATE TABLE `private_chat`  (
+  `thread_id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user1_id` bigint UNSIGNED NOT NULL,
+  `user2_id` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`thread_id`) USING BTREE,
+  UNIQUE INDEX `uniq_private_thread`(`user1_id` ASC, `user2_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of private_chat
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for user
 -- ----------------------------
 DROP TABLE IF EXISTS `user`;

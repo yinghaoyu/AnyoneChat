@@ -25,6 +25,10 @@ class MysqlDao
                              int limit);
     bool                      GetFriendList(
                              const int self_id, std::vector<std::shared_ptr<UserInfo>>& user_info);
+    bool GetUserThreads(int64_t userId, int64_t lastId, int pageSize,
+        std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
+        int& nextLastId);
+    bool CreatePrivateChat(int user1_id, int user2_id, int& thread_id);
 
   private:
     std::unique_ptr<MySQLPool> pool_;

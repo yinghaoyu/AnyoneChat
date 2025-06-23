@@ -6,6 +6,7 @@
 #include "statewidget.h"
 #include "userdata.h"
 #include "chatpage.h"
+#include "loadingdlg.h"
 
 #include <QDialog>
 #include <QLabel>
@@ -24,6 +25,7 @@ class ChatDialog : public QDialog
 public:
     explicit ChatDialog(QWidget *parent = nullptr);
     ~ChatDialog();
+    void loadChatList();
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override ;
 
@@ -32,8 +34,8 @@ protected:
     void UpdateChatMsg(std::vector<std::shared_ptr<TextChatData>> msgdata);
     
 private:
-    void AddLBGroup(StateWidget* lb);
-    void addChatUserList();
+    void showLoadingDlg(bool show = true);
+    void AddLBGroup(StateWidget* lb); 
     void loadMoreChatUser();
     void ClearLabelState(StateWidget* lb);
     void loadMoreConUser();
@@ -46,10 +48,12 @@ private:
     ChatUIMode _mode;
     ChatUIMode _state;
     QWidget* _last_widget;
-    QMap<int, QListWidgetItem*> _chat_items_added;
+    //QMap<int, QListWidgetItem*> _chat_items_added;
+    QMap<int, QListWidgetItem*> _chat_thread_items;
     QMap<int, ChatPage*> _chat_pages; // uid -> ChatPage*
     int _cur_chat_uid;
     QTimer * _timer;
+    LoadingDlg* _loading_dlg;
 public slots:
     void slot_loading_chat_user();
     void slot_side_chat();
@@ -71,6 +75,10 @@ public slots:
     void slot_text_chat_msg(std::shared_ptr<TextChatMsg> msg);
     void slot_append_send_chat_msg(std::shared_ptr<TextChatData> msgdata);
     void slot_set_red_point(bool state);
+    void slot_load_chat_thread(bool load_more, int last_thread_id,
+        std::vector<std::shared_ptr<ChatThreadInfo>> chat_threads);
+
+    void slot_create_private_chat(int uid, int other_id, int thread_id);
 private slots:
 
 };

@@ -129,6 +129,20 @@ void LogicSystem::RegisterCallBacks()
             placeholders::_1,
             placeholders::_2,
             placeholders::_3);
+
+    fun_callbacks_[ID_LOAD_CHAT_THREAD_REQ] =
+        std::bind(&LogicSystem::GetUserThreadsHandler,
+            this,
+            placeholders::_1,
+            placeholders::_2,
+            placeholders::_3);
+
+    fun_callbacks_[ID_CREATE_PRIVATE_CHAT_REQ] =
+        std::bind(&LogicSystem::CreatePrivateChat,
+            this,
+            placeholders::_1,
+            placeholders::_2,
+            placeholders::_3);
 }
 
 void LogicSystem::LoginHandler(
@@ -854,4 +868,91 @@ bool LogicSystem::GetFriendList(
 {
     // 从mysql获取好友列表
     return MysqlMgr::GetInstance()->GetFriendList(self_id, user_list);
+}
+
+void LogicSystem::GetUserThreadsHandler(
+    SessionPtr session, const short& msg_id, const string& msg_data)
+{
+    Json::Reader reader;
+    Json::Value  root;
+    reader.parse(msg_data, root);
+    auto uid     = root["uid"].asInt();
+    int  last_id = root["thread_id"].asInt();
+    LOG_INFO("get uid threads: {} ", uid);
+
+    Json::Value rtvalue;
+    rtvalue["error"] = ErrorCodes::Success;
+    rtvalue["uid"]   = uid;
+    Defer defer([this, &rtvalue, session]() {
+        std::string return_str = rtvalue.toStyledString();
+        session->Send(return_str, ID_LOAD_CHAT_THREAD_RSP);
+    });
+
+    std::vector<std::shared_ptr<ChatThreadInfo>> threads;
+
+    int  page_size    = 10;
+    bool load_more    = false;
+    int  next_last_id = 0;
+
+    bool res = GetUserThreads(
+        uid, last_id, page_size, threads, load_more, next_last_id);
+
+    if (!res)
+    {
+        LOG_ERROR("Mysql get user threads failed, uid: {}", uid);
+        rtvalue["error"] = ErrorCodes::UidInvalid;
+        return;
+    }
+
+    rtvalue["load_more"]    = load_more;
+    rtvalue["next_last_id"] = (int)next_last_id;
+
+    for (auto& thread : threads)
+    {
+        Json::Value thread_value;
+        thread_value["thread_id"] = int(thread->_thread_id);
+        thread_value["type"]      = thread->_type;
+        thread_value["user1_id"]  = thread->_user1_id;
+        thread_value["user2_id"]  = thread->_user2_id;
+        rtvalue["threads"].append(thread_value);
+    }
+}
+
+bool LogicSystem::GetUserThreads(int64_t userId, int64_t lastId, int pageSize,
+    std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
+    int& nextLastId)
+{
+    return MysqlMgr::GetInstance()->GetUserThreads(
+        userId, lastId, pageSize, threads, loadMore, nextLastId);
+}
+
+void LogicSystem::CreatePrivateChat(
+    SessionPtr session, const short& msg_id, const string& msg_data)
+{
+    Json::Reader reader;
+    Json::Value  root;
+    reader.parse(msg_data, root);
+    auto uid      = root["uid"].asInt();
+    auto other_id = root["other_id"].asInt();
+
+    Json::Value rtvalue;
+    rtvalue["error"]    = ErrorCodes::Success;
+    rtvalue["uid"]      = uid;
+    rtvalue["other_id"] = other_id;
+
+    Defer defer([this, &rtvalue, session]() {
+        std::string return_str = rtvalue.toStyledString();
+        session->Send(return_str, ID_CREATE_PRIVATE_CHAT_RSP);
+    });
+
+    int  thread_id = 0;
+    bool res =
+        MysqlMgr::GetInstance()->CreatePrivateChat(uid, other_id, thread_id);
+    if (!res)
+    {
+        rtvalue["error"] = ErrorCodes::CREATE_CHAT_FAILED;
+        return;
+    }
+
+    rtvalue["thread_id"] = thread_id;
 }

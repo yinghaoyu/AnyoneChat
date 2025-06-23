@@ -16,11 +16,13 @@ public:
     void setUserIcon(const QPixmap &icon);
     void setWidget(QWidget *w);
 
+    void setStaus(int status);
 private:
     ChatRole m_role;
     QLabel *m_pNameLabel;
     QLabel *m_pIconLabel;
     QWidget *m_pBubble;
+    QLabel *m_pStatusLabel;
 };
 
 #endif // CHATITEMBASE_H

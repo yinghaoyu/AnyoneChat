@@ -64,3 +64,16 @@ bool MysqlMgr::GetFriendList(
 {
     return dao_.GetFriendList(self_id, user_info);
 }
+
+bool MysqlMgr::GetUserThreads(int64_t userId, int64_t lastId, int pageSize,
+    std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
+    int& nextLastId)
+{
+    return dao_.GetUserThreads(
+        userId, lastId, pageSize, threads, loadMore, nextLastId);
+}
+
+bool MysqlMgr::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
+{
+    return dao_.CreatePrivateChat(user1_id, user2_id, thread_id);
+}

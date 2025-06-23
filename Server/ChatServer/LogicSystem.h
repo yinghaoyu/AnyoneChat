@@ -51,6 +51,13 @@ class LogicSystem : public Singleton<LogicSystem>
         int to_uid, std::vector<std::shared_ptr<ApplyInfo>>& list);
     bool GetFriendList(
         int self_id, std::vector<std::shared_ptr<UserInfo>>& user_list);
+    void GetUserThreadsHandler(
+        SessionPtr session, const short& msg_id, const string& msg_data);
+    bool GetUserThreads(int64_t userId, int64_t lastId, int pageSize,
+        std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
+        int& nextLastId);
+    void CreatePrivateChat(
+        SessionPtr session, const short& msg_id, const string& msg_data);
     std::vector<std::thread>           threads_;
     std::vector<shared_ptr<LogicNode>> msg_que_;
     std::mutex                         mutex_;

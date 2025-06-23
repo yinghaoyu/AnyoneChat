@@ -259,6 +259,35 @@ void UserMgr::CleanAllInfo()
     _token.clear();
     _chat_loaded = 0;
     _contact_loaded = 0;
+	_last_chat_thread_id = 0;
+}
+
+int UserMgr::GetLastChatThreadId()
+{
+    return _last_chat_thread_id;
+}
+
+void UserMgr::SetLastChatThreadId(int id)
+{
+    _last_chat_thread_id = id;
+}
+
+void UserMgr::AddChatThreadData(std::shared_ptr<ChatThreadData> chat_thread_data, int other_uid)
+{
+    //建立会话id到数据的映射关系
+    _chat_map[chat_thread_data->_thread_id] = chat_thread_data; 
+    //将对方uid和会话id关联
+    _uid_to_thread_id[other_uid] = chat_thread_data->_thread_id;
+}
+
+int UserMgr::GetThreadIdByUid(int uid)
+{
+   auto iter = _uid_to_thread_id.find(uid);
+   if (iter == _uid_to_thread_id.end()){
+       return -1;
+   }
+
+   return iter.value();
 }
 
 
