@@ -2,11 +2,7 @@
 
 root_path=$(dirname $(readlink -f $0))
 
-cd Server/ChatServer && ./generate_message_grpc.sh
-cd $root_path
-cd Server/GateServer && ./generate_message_grpc.sh
-cd $root_path
-cd Server/StatusServer && ./generate_message_grpc.sh
+cd Server/Common && ./generate_message_grpc.sh
 
 cd $root_path
 

@@ -73,7 +73,8 @@
     "cinttypes": "cpp",
     "typeindex": "cpp",
     "typeinfo": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "strstream": "cpp"
   },
   "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json"
 }

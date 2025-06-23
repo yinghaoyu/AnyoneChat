@@ -185,7 +185,7 @@ TextChatMsgRsp ChatGrpcClient::NotifyTextChatMsg(const std::string& server_ip,
         for (const auto& text_data : req.textmsgs())
         {
             TextChatData* new_msg = rsp.add_textmsgs();
-            new_msg->set_msgid(text_data.msgid());
+            new_msg->set_unique_id(text_data.unique_id());
             new_msg->set_msgcontent(text_data.msgcontent());
         }
     });

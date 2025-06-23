@@ -98,7 +98,7 @@
             <item>
              <widget class="QLabel" name="title_lb">
               <property name="text">
-               <string>燃烧的胸毛</string>
+               <string/>
               </property>
              </widget>
             </item>

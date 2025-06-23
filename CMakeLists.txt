@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(BlueBird)
+project(AnyoneChat)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug")

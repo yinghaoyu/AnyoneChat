@@ -26,9 +26,10 @@ bool MysqlMgr::CheckPwd(
     return dao_.CheckPwd(email, pwd, userInfo);
 }
 
-bool MysqlMgr::AddFriendApply(const int from, const int to)
+bool MysqlMgr::AddFriendApply(const int from, const int to,
+    const std::string& desc, const std::string& back_name)
 {
-    return dao_.AddFriendApply(from, to);
+    return dao_.AddFriendApply(from, to, desc, back_name);
 }
 
 bool MysqlMgr::AuthFriendApply(const int from, const int to)
@@ -36,10 +37,11 @@ bool MysqlMgr::AuthFriendApply(const int from, const int to)
     return dao_.AuthFriendApply(from, to);
 }
 
-bool MysqlMgr::AddFriend(
-    const int from, const int to, const std::string& back_name)
+bool MysqlMgr::AddFriend(const int from, const int to,
+    const std::string&                          back_name,
+    std::vector<std::shared_ptr<AddFriendMsg>>& msg_list)
 {
-    return dao_.AddFriend(from, to, back_name);
+    return dao_.AddFriend(from, to, back_name, msg_list);
 }
 
 std::shared_ptr<UserInfo> MysqlMgr::GetUser(int uid)
@@ -63,4 +65,28 @@ bool MysqlMgr::GetFriendList(
     const int self_id, std::vector<std::shared_ptr<UserInfo>>& user_info)
 {
     return dao_.GetFriendList(self_id, user_info);
+}
+
+bool MysqlMgr::GetUserThreads(int64_t userId, int64_t lastId, int pageSize,
+    std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
+    int& nextLastId)
+{
+    return dao_.GetUserThreads(
+        userId, lastId, pageSize, threads, loadMore, nextLastId);
+}
+
+bool MysqlMgr::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
+{
+    return dao_.CreatePrivateChat(user1_id, user2_id, thread_id);
+}
+
+std::shared_ptr<PageResult> MysqlMgr::LoadChatMsg(
+    int threadId, int lastId, int pageSize)
+{
+    return dao_.LoadChatMsg(threadId, lastId, pageSize);
+}
+
+bool MysqlMgr::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
+{
+    return dao_.AddChatMsg(chat_datas);
 }

@@ -6,6 +6,7 @@
 /Client/AnyoneChat/release
 /Client/AnyoneChat/.qtc_clangd
 /Client/AnyoneChat/.qmake.stash
+/Client/AnyoneChat/*.pro.user
 /Client/AnyoneChat/ui_*.h
 Makefile.Debug
 Makefile.Release

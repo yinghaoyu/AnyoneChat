@@ -4,6 +4,7 @@
 #include "RedisMgr.h"
 #include "UserMgr.h"
 #include "MysqlMgr.h"
+#include "utils.h"
 
 #include <jsoncpp/json/json.h>
 #include <jsoncpp/json/reader.h>
@@ -93,6 +94,20 @@ Status ChatServiceImpl::NotifyAuthFriend(
         rtvalue["error"] = ErrorCodes::UidInvalid;
     }
 
+    auto chat_time = getCurrentTimestamp();
+    for (auto& msg : request->textmsgs())
+    {
+        Json::Value chat;
+        chat["sender"]      = msg.sender_id();
+        chat["msg_id"]      = msg.msg_id();
+        chat["thread_id"]   = msg.thread_id();
+        chat["unique_id"]   = msg.unique_id();
+        chat["msg_content"] = msg.msgcontent();
+        chat["chat_time"]   = chat_time;
+        chat["status"]      = msg.status();
+        rtvalue["chat_datas"].append(chat);
+    }
+
     std::string return_str = rtvalue.toStyledString();
     LOG_INFO("NotifyAuthFriend session send begin, fromuid: {}, touid: {}",
              request->fromuid(), touid);
@@ -121,20 +136,23 @@ Status ChatServiceImpl::NotifyTextChatMsg(::grpc::ServerContext* context,
 
     // 在内存中则直接发送通知对方
     Json::Value rtvalue;
-    rtvalue["error"]   = ErrorCodes::Success;
-    rtvalue["fromuid"] = request->fromuid();
-    rtvalue["touid"]   = request->touid();
+    rtvalue["error"]     = ErrorCodes::Success;
+    rtvalue["fromuid"]   = request->fromuid();
+    rtvalue["touid"]     = request->touid();
+    rtvalue["thread_id"] = request->thread_id();
 
     // 将聊天数据组织为数组
     Json::Value text_array;
     for (auto& msg : request->textmsgs())
     {
         Json::Value element;
-        element["content"] = msg.msgcontent();
-        element["msgid"]   = msg.msgid();
+        element["content"]    = msg.msgcontent();
+        element["unique_id"]  = msg.unique_id();
+        element["message_id"] = msg.msg_id();
+        element["chat_time"]  = msg.chat_time();
         text_array.append(element);
     }
-    rtvalue["text_array"] = text_array;
+    rtvalue["chat_datas"] = text_array;
 
     std::string return_str = rtvalue.toStyledString();
     LOG_INFO("NotifyTextChatMsg session send begin, fromuid: {}, touid: {}",

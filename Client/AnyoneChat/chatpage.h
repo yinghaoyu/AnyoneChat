@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include "userdata.h"
+#include "chatitembase.h"
 #include <QMap>
 
 namespace Ui {
@@ -15,8 +16,9 @@ class ChatPage : public QWidget
 public:
     explicit ChatPage(QWidget *parent = nullptr);
     ~ChatPage();
-    void SetUserInfo(std::shared_ptr<UserInfo> user_info);
-    void AppendChatMsg(std::shared_ptr<TextChatData> msg);
+    void SetChatData(std::shared_ptr<ChatThreadData> chat_data);
+    void AppendChatMsg(std::shared_ptr<ChatDataBase> msg);
+    void UpdateChatStatus(QString unique_id, int status);
 protected:
     void paintEvent(QPaintEvent *event) override;
     void closeEvent(QCloseEvent* event) override;
@@ -28,11 +30,11 @@ private slots:
 private:
     void clearItems();
     Ui::ChatPage *ui;
-    std::shared_ptr<UserInfo> _user_info;
+    std::shared_ptr<ChatThreadData> _chat_data;
     QMap<QString, QWidget*>  _bubble_map;
+    QHash<QString, ChatItemBase*> _unrsp_item_map;
 signals:
     void sig_window_close();
-    void sig_append_send_chat_msg(std::shared_ptr<TextChatData> msg);
 };
 
 #endif // CHATPAGE_H
