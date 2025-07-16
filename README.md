@@ -9,6 +9,8 @@
 # 相关软件版本参考
 - qt >= 5.12
 - boost >= 1.88.0
+- c++ >= c++11
+- go >= 1.22.1
 # 参考
 1. [llfcchat](https://github.com/secondtonone1/llfcchat)
 2. [sylar](https://github.com/sylar-yin/sylar)
