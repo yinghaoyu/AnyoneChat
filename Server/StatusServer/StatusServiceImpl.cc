@@ -110,39 +110,6 @@ ChatServer StatusServiceImpl::getChatServer()
     return minServer;
 }
 
-Status StatusServiceImpl::Login(
-    ServerContext* context, const LoginReq* request, LoginRsp* reply)
-{
-    auto uid   = request->uid();
-    auto token = request->token();
-
-    LOG_INFO("gRPC login uid: {}, token: {}", uid, token);
-
-    std::string uid_str     = std::to_string(uid);
-    std::string token_key   = USERTOKENPREFIX + uid_str;
-    std::string token_value = "";
-    bool        success = RedisMgr::GetInstance()->Get(token_key, token_value);
-    if (!success)
-    {
-        LOG_INFO("Redis get token failed token_key: {}", token_key);
-        reply->set_error(ErrorCodes::UidInvalid);
-        return Status::OK;
-    }
-
-    if (token_value != token)
-    {
-        LOG_INFO("Redis token not match, redis_token: {}, recv_token: {}",
-                 token_value, token);
-        reply->set_error(ErrorCodes::TokenInvalid);
-        return Status::OK;
-    }
-    LOG_INFO("Redis token match, uid: {}, token: {}", uid, token);
-    reply->set_error(ErrorCodes::Success);
-    reply->set_uid(uid);
-    reply->set_token(token);
-    return Status::OK;
-}
-
 void StatusServiceImpl::insertToken(int uid, std::string token)
 {
     std::string uid_str   = std::to_string(uid);

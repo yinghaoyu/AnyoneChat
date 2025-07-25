@@ -40,7 +40,6 @@ message LoginRsp {
 
 service StatusService {
 	rpc GetChatServer (GetChatServerReq) returns (GetChatServerRsp) {}
-	rpc Login(LoginReq) returns(LoginRsp);
 }
 
 message AddFriendReq {
