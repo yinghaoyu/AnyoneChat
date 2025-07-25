@@ -1,0 +1,51 @@
+services:
+#  gate_server:
+#    image: yinghaoyu/GateServer:v1.0.0
+#    working_dir: /app
+#    volumes:
+#      - ./Server/GateServer/config.ini:/app/config.ini
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - mysql
+#      - redis
+#    entrypoint: [""]
+#    networks:
+#      custom_network:
+#        ipv4_address: 192.168.0.1
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: AnyoneChat
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+      - ./mysql-init/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      custom_network:
+        ipv4_address: 192.168.1.2
+
+  redis:
+    image: redis:latest
+    command: ["redis-server", "--requirepass", "123456"]
+    ports:
+      - "6379:6379"
+    networks:
+      custom_network:
+        ipv4_address: 192.168.1.3
+
+networks:
+  custom_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+
+volumes:
+  db_data:

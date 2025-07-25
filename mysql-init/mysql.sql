@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS `AnyoneChat` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `AnyoneChat`;
+
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -17,14 +20,6 @@ CREATE TABLE `friend`  (
 -- ----------------------------
 -- Records of friend
 -- ----------------------------
-INSERT INTO `friend` VALUES (55, 1055, 1054, 'sqy');
-INSERT INTO `friend` VALUES (56, 1054, 1055, '');
-INSERT INTO `friend` VALUES (61, 1012, 1056, 'test28');
-INSERT INTO `friend` VALUES (62, 1056, 1012, '');
-INSERT INTO `friend` VALUES (63, 1012, 1050, 'test23');
-INSERT INTO `friend` VALUES (64, 1050, 1012, '');
-INSERT INTO `friend` VALUES (81, 1002, 1019, 'zack');
-INSERT INTO `friend` VALUES (82, 1019, 1002, '');
 
 -- ----------------------------
 -- Table structure for friend_apply
