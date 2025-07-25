@@ -191,7 +191,6 @@ DISTFILES += \
     res/head_3.jpg \
     res/head_4.jpg \
     res/head_5.jpg \
-    res/ice.png \
     res/loading.gif \
     res/male.png \
     res/msg_chat_hover.png \
