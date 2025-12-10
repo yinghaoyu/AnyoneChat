@@ -36,8 +36,8 @@ class RedisMgr : public Singleton<RedisMgr>,
     void DecreaseCount(std::string server_name);
     void InitCount(std::string server_name);
     void DelCount(std::string server_name);
-    bool SetFileInfo(const std::string& md5, std::shared_ptr<FileInfo>);
-    std::shared_ptr<FileInfo> GetFileInfo(const std::string& md5);
+    bool SetFileInfo(const std::string& name, std::shared_ptr<FileInfo>);
+    std::shared_ptr<FileInfo> GetFileInfo(const std::string& name);
 
   private:
     RedisMgr();

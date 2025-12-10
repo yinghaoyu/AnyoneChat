@@ -5,6 +5,8 @@
 #include <singleton.h>
 #include "userdata.h"
 #include <vector>
+#include <mutex>
+
 class UserMgr:public QObject,public Singleton<UserMgr>,
         public std::enable_shared_from_this<UserMgr>
 {

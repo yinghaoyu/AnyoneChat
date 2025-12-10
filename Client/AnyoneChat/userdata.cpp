@@ -70,21 +70,6 @@ void ChatThreadData::SetLastMsgId(int msg_id)
     _last_msg_id = msg_id;
 }
 
-int ChatThreadData::GetLastMsgId()
-{
-    return _last_msg_id;
-}
-
-void ChatThreadData::AppendUnRspMsg(QString unique_id, std::shared_ptr<ChatDataBase> base_msg)
-{
-    _msg_unrsp_map.insert(unique_id, base_msg);
-}
-
-
-QMap<QString, std::shared_ptr<ChatDataBase>>& ChatThreadData::GetMsgUnRspRef() {
-    return _msg_unrsp_map;
-}
-
 void ChatThreadData::SetOtherId(int other_id)
 {
     _other_id = other_id;
@@ -125,6 +110,20 @@ QString ChatThreadData::GetLastMsg()
     return _last_msg;
 }
 
+int ChatThreadData::GetLastMsgId()
+{
+    return _last_msg_id;
+}
+
+void ChatThreadData::AppendUnRspMsg(QString unique_id, std::shared_ptr<ChatDataBase> base_msg)
+{
+    _msg_unrsp_map.insert(unique_id, base_msg);
+}
+
+
+QMap<QString, std::shared_ptr<ChatDataBase>>& ChatThreadData::GetMsgUnRspRef() {
+    return _msg_unrsp_map;
+}
 
 void AuthInfo::SetChatDatas(std::vector<std::shared_ptr<TextChatData>> chat_datas)
 {

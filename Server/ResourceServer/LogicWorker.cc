@@ -77,10 +77,21 @@ void LogicWorker::RegisterCallBacks()
         auto        uid_str       = std::to_string(uid);
         auto        file_path_str = (file_path / uid_str / name).string();
         Json::Value rtvalue;
-        Defer       defer([this, &rtvalue, session]() {
+
+        auto callback = [=](const Json::Value& result) {
+            // 在异步任务完成后调用
+            Json::Value rtvalue    = result;
+            rtvalue["error"]       = ErrorCodes::Success;
+            rtvalue["total_size"]  = total_size;
+            rtvalue["seq"]         = seq;
+            rtvalue["name"]        = name;
+            rtvalue["trans_size"]  = trans_size;
+            rtvalue["last"]        = last;
+            rtvalue["md5"]         = md5;
+            rtvalue["uid"]         = uid;
             std::string return_str = rtvalue.toStyledString();
             session->Send(return_str, ID_UPLOAD_FILE_RSP);
-        });
+        };
 
         // ʹ�� std::hash ���ַ������й�ϣ
         std::hash<std::string> hash_fn;
@@ -106,7 +117,9 @@ void LogicWorker::RegisterCallBacks()
             auto file_info = LogicSystem::GetInstance()->GetFileInfo(md5);
             if (file_info == nullptr)
             {
-                rtvalue["error"] = ErrorCodes::FileNotExists;
+                rtvalue["error"]       = ErrorCodes::FileNotExists;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_FILE_RSP);
                 return;
             }
             file_info->_seq        = seq;
@@ -122,7 +135,8 @@ void LogicWorker::RegisterCallBacks()
                 total_size,
                 trans_size,
                 last,
-                file_data),
+                file_data,
+                callback),
             index);
 
         rtvalue["error"]      = ErrorCodes::Success;
@@ -184,13 +198,24 @@ void LogicWorker::RegisterCallBacks()
         // ת��Ϊ�ַ���
         auto uid_str = std::to_string(uid);
 
-        auto        file_path     = ConfigMgr::Inst().GetFileOutPath();
-        auto        file_path_str = (file_path / uid_str / name).string();
+        auto file_path     = ConfigMgr::Inst().GetFileOutPath();
+        auto file_path_str = (file_path / uid_str / name).string();
+
         Json::Value rtvalue;
-        Defer       defer([this, &rtvalue, session]() {
+        auto        callback = [=](const Json::Value& result) {
+            // 在异步任务完成后调用
+            Json::Value rtvalue    = result;
+            rtvalue["total_size"]  = total_size;
+            rtvalue["seq"]         = seq;
+            rtvalue["name"]        = name;
+            rtvalue["trans_size"]  = trans_size;
+            rtvalue["last"]        = last;
+            rtvalue["md5"]         = md5;
+            rtvalue["uid"]         = uid;
+            rtvalue["last_seq"]    = last_seq;
             std::string return_str = rtvalue.toStyledString();
             session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
-        });
+        };
 
         // ��һ����У��һ��token�Ƿ����
         if (seq == 1)
@@ -202,13 +227,17 @@ void LogicWorker::RegisterCallBacks()
             bool success = RedisMgr::GetInstance()->Get(token_key, token_value);
             if (!success)
             {
-                rtvalue["error"] = ErrorCodes::UidInvalid;
+                rtvalue["error"]       = ErrorCodes::UidInvalid;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
                 return;
             }
 
             if (token_value != token)
             {
-                rtvalue["error"] = ErrorCodes::TokenInvalid;
+                rtvalue["error"]       = ErrorCodes::TokenInvalid;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
                 return;
             }
         }
@@ -235,7 +264,9 @@ void LogicWorker::RegisterCallBacks()
                 RedisMgr::GetInstance()->SetFileInfo(name, file_info);
             if (!success)
             {
-                rtvalue["error"] = ErrorCodes::FileSaveRedisFailed;
+                rtvalue["error"]       = ErrorCodes::FileSaveRedisFailed;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
                 return;
             }
         }
@@ -246,7 +277,9 @@ void LogicWorker::RegisterCallBacks()
             auto file_info = RedisMgr::GetInstance()->GetFileInfo(name);
             if (file_info == nullptr)
             {
-                rtvalue["error"] = ErrorCodes::FileNotExists;
+                rtvalue["error"]       = ErrorCodes::FileNotExists;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
                 return;
             }
             file_info->_seq        = seq;
@@ -255,7 +288,9 @@ void LogicWorker::RegisterCallBacks()
                 RedisMgr::GetInstance()->SetFileInfo(name, file_info);
             if (!success)
             {
-                rtvalue["error"] = ErrorCodes::FileSaveRedisFailed;
+                rtvalue["error"]       = ErrorCodes::FileSaveRedisFailed;
+                std::string return_str = rtvalue.toStyledString();
+                session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
                 return;
             }
         }
@@ -269,18 +304,9 @@ void LogicWorker::RegisterCallBacks()
                 total_size,
                 trans_size,
                 last,
-                file_data),
+                file_data,
+                callback),
             index);
-
-        rtvalue["error"]      = ErrorCodes::Success;
-        rtvalue["total_size"] = total_size;
-        rtvalue["seq"]        = seq;
-        rtvalue["name"]       = name;
-        rtvalue["trans_size"] = trans_size;
-        rtvalue["last"]       = last;
-        rtvalue["md5"]        = md5;
-        rtvalue["uid"]        = uid;
-        rtvalue["last_seq"]   = last_seq;
     };
 }
 

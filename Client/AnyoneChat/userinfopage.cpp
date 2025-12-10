@@ -12,6 +12,7 @@
 #include "tcpmgr.h"
 #include "filetcpmgr.h"
 #include "global.h"
+#include <QRegularExpression>
 
 UserInfoPage::UserInfoPage(QWidget *parent) :
     QWidget(parent),
@@ -20,10 +21,43 @@ UserInfoPage::UserInfoPage(QWidget *parent) :
     ui->setupUi(this);
     auto icon = UserMgr::GetInstance()->GetIcon();
     qDebug() << "icon is " << icon ;
-    QPixmap pixmap(icon);
-    QPixmap scaledPixmap = pixmap.scaled( ui->head_lb->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation); // 将图片缩放到label的大小
-    ui->head_lb->setPixmap(scaledPixmap); // 将缩放后的图片设置到QLabel上
-    ui->head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
+
+    //使用正则表达式检查是否使用默认头像
+    QRegularExpression regex("^:/res/head_(\\d+)\\.jpg$");
+    QRegularExpressionMatch match = regex.match(icon);
+    if (match.hasMatch()) {
+        QPixmap pixmap(icon);
+        QPixmap scaledPixmap = pixmap.scaled(ui->head_lb->size(), 
+            Qt::KeepAspectRatio, Qt::SmoothTransformation); // 将图片缩放到label的大小
+        ui->head_lb->setPixmap(scaledPixmap); // 将缩放后的图片设置到QLabel上
+        ui->head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
+    }
+    else {
+        // 如果是用户上传的头像，获取存储目录
+        QString storageDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+        QDir avatarsDir(storageDir + "/avatars");
+
+        // 确保目录存在
+        if (avatarsDir.exists()) {
+            QString avatarPath = avatarsDir.filePath(QFileInfo(icon).fileName()); // 获取上传头像的完整路径
+            QPixmap pixmap(avatarPath); // 加载上传的头像图片
+            if (!pixmap.isNull()) {
+                QPixmap scaledPixmap = pixmap.scaled(ui->head_lb->size(),
+                    Qt::KeepAspectRatio, Qt::SmoothTransformation); // 将图片缩放到label的大小
+                ui->head_lb->setPixmap(scaledPixmap); // 将缩放后的图片设置到QLabel上
+                ui->head_lb->setScaledContents(true); // 设置QLabel自动缩放图片内容以适应大小
+            }
+            else {
+                qWarning() << "无法加载上传的头像：" << avatarPath;
+            }
+        }
+        else {
+            qWarning() << "头像存储目录不存在：" << avatarsDir.path();
+        }
+    }
+
+
+  
     //获取nick
     auto nick = UserMgr::GetInstance()->GetNick();
     //获取name
@@ -93,7 +127,7 @@ void UserInfoPage::slot_up_load()
     // 3. 拼接最终的文件名 head.png
     QString file_name = generateUniqueIconName();
     QString filePath = dir.filePath("avatars" +
-                                    QString(QDir::separator()) + file_name);
+                          QString(QDir::separator()) + file_name);
 
     // 4. 保存 scaledPixmap 为 PNG（无损、最高质量）
     if (!scaledPixmap.save(filePath, "PNG")) {
@@ -114,30 +148,30 @@ void UserInfoPage::slot_up_load()
         return;
     }
 
-            //保存当前文件位置指针
+    //保存当前文件位置指针
     qint64 originalPos = file.pos();
 
     QCryptographicHash hash(QCryptographicHash::Md5);
     if (!hash.addData(&file)) {
-        qWarning() << "Failed to read data from file:" << filePath;
-        return ;
+            qWarning() << "Failed to read data from file:" << filePath;
+            return ;
     }
 
-            // 5. 转化为16进制字符串
+    // 5. 转化为16进制字符串
     QString file_md5 = hash.result().toHex(); // 返回十六进制字符串
 
-            //读取文件内容并发送
+    //读取文件内容并发送
     QByteArray buffer;
     int seq = 0;
 
-            //创建QFileInfo 对象
+    //创建QFileInfo 对象
     auto fileInfo = std::make_shared<QFileInfo>(filePath);
     //获取文件名
     QString fileName = fileInfo->fileName();
     //文件名
     qDebug() << "文件名是: " << fileName;
 
-            //获取文件大小
+    //获取文件大小
     int total_size = fileInfo->size();
     //最后一个发送序列
     int last_seq = 0;
@@ -148,10 +182,10 @@ void UserInfoPage::slot_up_load()
         last_seq = total_size / MAX_FILE_LEN;
     }
 
-            // 恢复文件指针到原来的位置
+    // 恢复文件指针到原来的位置
     file.seek(originalPos);
 
-            //每次读取MAX_FILE_LEN字节并发送
+    //每次读取MAX_FILE_LEN字节并发送
     buffer = file.read(MAX_FILE_LEN);
 
     QJsonObject jsonObj;

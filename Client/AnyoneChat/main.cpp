@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include <QApplication>
-#include <QPropertyAnimation>
 #include <QFile>
 #include "global.h"
 #include "tcpmgr.h"

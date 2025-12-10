@@ -483,7 +483,7 @@ void RedisMgr::DelCount(std::string server_name)
 }
 
 bool RedisMgr::SetFileInfo(
-    const std::string& md5, std::shared_ptr<FileInfo> file_info)
+    const std::string& name, std::shared_ptr<FileInfo> file_info)
 {
     Json::Reader reader;
     Json::Value  root;
@@ -493,14 +493,14 @@ bool RedisMgr::SetFileInfo(
     root["total_size"]    = file_info->_total_size;
     root["trans_size"]    = file_info->_trans_size;
     auto file_info_str    = root.toStyledString();
-    auto redis_key        = "file_upload_" + md5;
+    auto redis_key        = "file_upload_" + name;
     bool success          = SetExp(redis_key, file_info_str, 3600);
     return success;
 }
 
-std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& md5)
+std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& name)
 {
-    auto        redis_key     = "file_upload_" + md5;
+    auto        redis_key     = "file_upload_" + name;
     std::string file_info_str = "";
 
     // �� Redis ��ȡ����
@@ -515,7 +515,7 @@ std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& md5)
     Json::Value  root;
     if (!reader.parse(file_info_str, root))
     {
-        std::cout << "Failed to parse file info JSON for md5: " << md5
+        std::cout << "Failed to parse file info JSON for name: " << name
                   << std::endl;
         return nullptr;
     }
@@ -532,7 +532,7 @@ std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& md5)
     }
     catch (const std::exception& e)
     {
-        std::cout << "Error parsing file info fields for md5 " << md5 << ": "
+        std::cout << "Error parsing file info fields for name " << name << ": "
                   << e.what() << std::endl;
         return nullptr;
     }

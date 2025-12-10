@@ -19,6 +19,7 @@ public:
 	int _sex;
     QString _icon;
 };
+
 Q_DECLARE_METATYPE(SearchInfo)
 Q_DECLARE_METATYPE(std::shared_ptr<SearchInfo>)
 
@@ -34,6 +35,7 @@ public:
     QString _nick;
     int     _sex;
 };
+
 Q_DECLARE_METATYPE(std::shared_ptr<AddFriendApply>)
 
 struct ApplyInfo {
@@ -61,7 +63,6 @@ struct ApplyInfo {
     int _status;
 };
 
-
 class TextChatData;
 struct AuthInfo {
     AuthInfo(int uid, QString name,
@@ -78,6 +79,7 @@ struct AuthInfo {
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
 };
+
 Q_DECLARE_METATYPE(std::shared_ptr<AuthInfo>)
 
 struct AuthRsp {
@@ -90,6 +92,7 @@ struct AuthRsp {
     
     }
 
+
     void SetChatDatas(std::vector<std::shared_ptr<TextChatData>> _chat_datas);
     int _uid;
     QString _name;
@@ -99,11 +102,10 @@ struct AuthRsp {
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
 };
+
 Q_DECLARE_METATYPE(std::shared_ptr<AuthRsp>)
 
 struct UserInfo {
-    UserInfo() = default;
-
     UserInfo(int uid, QString name, QString nick, QString icon, int sex, QString last_msg = "", QString desc=""):
         _uid(uid),_name(name),_nick(nick),_icon(icon),_sex(sex),_desc(desc){}
 
@@ -127,6 +129,8 @@ struct UserInfo {
 
     }
 
+    UserInfo() = default;
+
     int _uid;
     QString _name;
     QString _nick;
@@ -134,6 +138,7 @@ struct UserInfo {
     int _sex;
     QString _desc;
 };
+
 Q_DECLARE_METATYPE(std::shared_ptr<UserInfo>)
 
 class ChatDataBase {
@@ -199,18 +204,21 @@ public:
     {
 
     }
+
     TextChatData() = default;
 };
+
 Q_DECLARE_METATYPE(std::vector<std::shared_ptr<TextChatData>>)
 
 //聊天线程信息
 struct ChatThreadInfo {
-    ChatThreadInfo() = default;
     int _thread_id;
     QString _type;     // "private" or "group"
     int _user1_id;    // 私聊时对应 private_chat.user1_id；群聊时设为 0
     int _user2_id;    // 私聊时对应 private_chat.user2_id；群聊时设为 0
+    ChatThreadInfo() = default;
 };
+
 Q_DECLARE_METATYPE(std::vector<std::shared_ptr<ChatThreadInfo>>)
 
 //客户端本地存储的聊天线程数据结构

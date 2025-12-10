@@ -786,7 +786,7 @@ void TcpMgr::slot_send_data(ReqId reqId, QByteArray dataBytes)
     // 添加字符串数据
     block.append(dataBytes);
 
-            //判断是否正在发送
+    //判断是否正在发送
     if (_pending) {
         //放入队列直接返回，因为目前有数据正在发送
         _send_queue.enqueue(block);
