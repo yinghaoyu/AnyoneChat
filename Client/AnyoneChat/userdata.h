@@ -11,6 +11,7 @@
 class SearchInfo {
 public:
     SearchInfo(int uid, QString name, QString nick, QString desc, int sex, QString icon);
+    SearchInfo() = default;
 	int _uid;
 	QString _name;
 	QString _nick;
@@ -18,11 +19,14 @@ public:
 	int _sex;
     QString _icon;
 };
+Q_DECLARE_METATYPE(SearchInfo)
+Q_DECLARE_METATYPE(std::shared_ptr<SearchInfo>)
 
 class AddFriendApply {
 public:
     AddFriendApply(int from_uid, QString name, QString desc,
                    QString icon, QString nick, int sex);
+    AddFriendApply() = default;
 	int _from_uid;
 	QString _name;
 	QString _desc;
@@ -30,8 +34,10 @@ public:
     QString _nick;
     int     _sex;
 };
+Q_DECLARE_METATYPE(std::shared_ptr<AddFriendApply>)
 
 struct ApplyInfo {
+    ApplyInfo() = default;
     ApplyInfo(int uid, QString name, QString desc,
         QString icon, QString nick, int sex, int status)
         :_uid(uid),_name(name),_desc(desc),
@@ -55,13 +61,14 @@ struct ApplyInfo {
     int _status;
 };
 
+
 class TextChatData;
 struct AuthInfo {
     AuthInfo(int uid, QString name,
              QString nick, QString icon, int sex):
         _uid(uid), _name(name), _nick(nick), _icon(icon),
         _sex(sex), _thread_id(0){}
-
+    AuthInfo() = default;
     void SetChatDatas(std::vector<std::shared_ptr<TextChatData>> _chat_datas);
     int _uid;
     QString _name;
@@ -71,8 +78,10 @@ struct AuthInfo {
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
 };
+Q_DECLARE_METATYPE(std::shared_ptr<AuthInfo>)
 
 struct AuthRsp {
+    AuthRsp() = default;
     AuthRsp(int peer_uid, QString peer_name,
             QString peer_nick, QString peer_icon, int peer_sex)
         :_uid(peer_uid),_name(peer_name),_nick(peer_nick),
@@ -81,7 +90,6 @@ struct AuthRsp {
     
     }
 
-
     void SetChatDatas(std::vector<std::shared_ptr<TextChatData>> _chat_datas);
     int _uid;
     QString _name;
@@ -91,8 +99,11 @@ struct AuthRsp {
     int _thread_id;
     std::vector<std::shared_ptr<TextChatData>> _chat_datas;
 };
+Q_DECLARE_METATYPE(std::shared_ptr<AuthRsp>)
 
 struct UserInfo {
+    UserInfo() = default;
+
     UserInfo(int uid, QString name, QString nick, QString icon, int sex, QString last_msg = "", QString desc=""):
         _uid(uid),_name(name),_nick(nick),_icon(icon),_sex(sex),_desc(desc){}
 
@@ -123,6 +134,7 @@ struct UserInfo {
     int _sex;
     QString _desc;
 };
+Q_DECLARE_METATYPE(std::shared_ptr<UserInfo>)
 
 class ChatDataBase {
 public:
@@ -187,20 +199,24 @@ public:
     {
 
     }
-
+    TextChatData() = default;
 };
+Q_DECLARE_METATYPE(std::vector<std::shared_ptr<TextChatData>>)
 
 //聊天线程信息
 struct ChatThreadInfo {
+    ChatThreadInfo() = default;
     int _thread_id;
     QString _type;     // "private" or "group"
     int _user1_id;    // 私聊时对应 private_chat.user1_id；群聊时设为 0
     int _user2_id;    // 私聊时对应 private_chat.user2_id；群聊时设为 0
 };
+Q_DECLARE_METATYPE(std::vector<std::shared_ptr<ChatThreadInfo>>)
 
 //客户端本地存储的聊天线程数据结构
 class ChatThreadData {
 public:
+    ChatThreadData() = default;
     ChatThreadData(int other_id, int thread_id, int last_msg_id):
         _other_id(other_id), _thread_id(thread_id), _last_msg_id(last_msg_id){}
     void AddMsg(std::shared_ptr<ChatDataBase> msg);

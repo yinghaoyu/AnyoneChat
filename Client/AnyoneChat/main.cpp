@@ -3,6 +3,7 @@
 #include <QPropertyAnimation>
 #include <QFile>
 #include "global.h"
+#include "tcpmgr.h"
 
 int main(int argc, char *argv[])
 {
@@ -33,14 +34,8 @@ int main(int argc, char *argv[])
     QString gate_port = settings.value("GateServer/port").toString();
     gate_url_prefix = "http://"+gate_host+":"+gate_port;
 
-    // 创建一个动画效果
-    // QPropertyAnimation *animation = new QPropertyAnimation(button, "geometry");
-    // animation->setDuration(1000); // 动画持续时间，单位毫秒
-    // animation->setStartValue(QRect(50, 50, 100, 40)); // 动画开始位置
-    // animation->setEndValue(QRect(150, 100, 100, 40)); // 动画结束位置
-
-    // 启动动画
-    //animation->start();
+    //启动tcp线程
+    TcpThread tcpthread;
 
     MainWindow w;
     w.show();

@@ -62,6 +62,7 @@ private:
     //上次会话的id
     int _last_chat_thread_id;
     QMap<int, int> _uid_to_thread_id;
+    std::mutex _mtx;
 public slots:
     void SlotAddFriendRsp(std::shared_ptr<AuthRsp> rsp);
     void SlotAddFriendAuth(std::shared_ptr<AuthInfo> auth);
