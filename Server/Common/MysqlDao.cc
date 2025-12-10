@@ -360,14 +360,26 @@ bool MysqlDao::AddFriend(const int from, const int to,
             }
         }
 
+        // 假如 A(1001) 和 B(1002) 同时互相加好友，
+        // 那么事务A分别插入数据 (1001, 1002)、(1002, 1001)
+        // 那么事务B分别插入数据 (1002, 1001)、(1001, 1002)
+        // 这种情况显然会发生死锁，而数据库自带的死锁检测通常耗时较长
+        // 死锁检测通常伴随着事务回滚，为防止两个事务发生死锁
+        // 可以让A和B都以(1001, 1002)、(1002, 1001)相同顺序插入
+        int min = std::min(from, to);
+        int max = std::max(from, to);
         // 3. 插入认证方好友数据
         {
+            int         x   = from == min ? from : to;
+            int         y   = from == min ? to : from;
+            std::string str = from == min ? back_name : reverse_back;
+
             int ret = tran->getMySQL()->execStmt(
                 "INSERT IGNORE INTO friend (self_id, "
                 "friend_id, back) VALUES (?, ?, ?)",
-                (int32_t)from,  // 反过来的申请时from，验证时to
-                (int32_t)to,
-                back_name.c_str());
+                (int32_t)x,
+                (int32_t)y,
+                str);
             if (ret != 0)
             {
                 tran->rollback();
@@ -378,12 +390,16 @@ bool MysqlDao::AddFriend(const int from, const int to,
 
         // 4. 插入申请方好友数据
         {
+            int         x   = from == max ? from : to;
+            int         y   = from == max ? to : from;
+            std::string str = from == max ? back_name : reverse_back;
+
             int ret = tran->getMySQL()->execStmt(
                 "INSERT IGNORE INTO friend (self_id, "
                 "friend_id, back) VALUES (?, ?, ?)",
-                (int32_t)to,
-                (int32_t)from,
-                std::string(""));
+                (int32_t)x,
+                (int32_t)y,
+                str);
             if (ret != 0)
             {
                 tran->rollback();
@@ -454,6 +470,7 @@ bool MysqlDao::AddFriend(const int from, const int to,
             chat_datas.push_back(tx_data);
         }
 
+        // 8. 插入成为好友的消息
         {
             std::string hello_str = "Hello, I'm " + reverse_back;
 
@@ -764,16 +781,21 @@ bool MysqlDao::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
             LOG_ERROR("Failed to begin transaction");
             return false;
         }
-
+        // 保证插入的一致性，避免两个进程执行相同插入
         int uid1 = std::min(user1_id, user2_id);
         int uid2 = std::max(user1_id, user2_id);
-
-        auto result =
-            tran->getMySQL()->queryStmt("SELECT thread_id FROM private_chat "
-                                        "WHERE (user1_id = ? AND user2_id = ?) "
-                                        "FOR UPDATE;",
-                (int32_t)uid1,
-                (int32_t)uid2);
+    again:
+        // 如果这里有 SELECT FOR UPDATE，数据不存在时，会产生间隙锁
+        // 当事务A(1001)和B(1002)同时进行时，下面 INSERT INTO chat_thread
+        // 会产生意向锁，意向锁和间隙锁时互斥的，因此会发生死锁
+        // 解决方法是，先插入（乐观策略）
+        // 如果有ER_DUP_ENTRY，说明被其他事务插入相同数据
+        // 重新查询返回即可
+        auto result = tran->getMySQL()->queryStmt(
+            "SELECT thread_id FROM private_chat "
+            "WHERE (user1_id = ? AND user2_id = ?);",
+            (int32_t)uid1,
+            (int32_t)uid2);
 
         if (result && result->next())
         {
@@ -789,6 +811,13 @@ bool MysqlDao::CreatePrivateChat(int user1_id, int user2_id, int& thread_id)
         int ret = tran->getMySQL()->execStmt(
             "INSERT INTO chat_thread (type, created_at) VALUES ('private', "
             "NOW());");
+
+        // ER_DUP_ENTRY 1062 重复插入
+        if (ret == 1062)
+        {
+            // FIXME(yinghaoyu): 如果怕多次无效可以限制循环次数
+            goto again;
+        }
 
         if (ret != 0)
         {
