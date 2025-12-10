@@ -210,6 +210,7 @@ void LogicSystem::LoginHandler(
     rtvalue["desc"]  = user_info->desc_;
     rtvalue["sex"]   = user_info->sex_;
     rtvalue["icon"]  = user_info->icon_;
+    rtvalue["token"] = token;
 
     // 从数据库获取申请列表
     std::vector<std::shared_ptr<ApplyInfo>> apply_list;

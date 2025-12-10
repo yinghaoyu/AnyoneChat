@@ -2,6 +2,7 @@
 
 #include "Singleton.h"
 #include "redis.h"
+#include "FileInfo.h"
 
 class RedisMgr : public Singleton<RedisMgr>,
                  public std::enable_shared_from_this<RedisMgr>
@@ -10,8 +11,10 @@ class RedisMgr : public Singleton<RedisMgr>,
 
   public:
     ~RedisMgr();
-    bool        Get(const std::string& key, std::string& value);
-    bool        Set(const std::string& key, const std::string& value);
+    bool Get(const std::string& key, std::string& value);
+    bool Set(const std::string& key, const std::string& value);
+    bool SetExp(
+        const std::string& key, const std::string& value, int expire_seconds);
     bool        LPush(const std::string& key, const std::string& value);
     bool        LPop(const std::string& key, std::string& value);
     bool        RPush(const std::string& key, const std::string& value);
@@ -33,6 +36,8 @@ class RedisMgr : public Singleton<RedisMgr>,
     void DecreaseCount(std::string server_name);
     void InitCount(std::string server_name);
     void DelCount(std::string server_name);
+    bool SetFileInfo(const std::string& md5, std::shared_ptr<FileInfo>);
+    std::shared_ptr<FileInfo> GetFileInfo(const std::string& md5);
 
   private:
     RedisMgr();

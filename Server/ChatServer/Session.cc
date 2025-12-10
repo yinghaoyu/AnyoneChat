@@ -374,4 +374,7 @@ void Session::DealExceptionSession()
     RedisMgr::GetInstance()->Del(USER_SESSION_PREFIX + uid_str);
     // 清除用户登录信息
     RedisMgr::GetInstance()->Del(USERIPPREFIX + uid_str);
+    // 清除用户token信息
+    std::string token_key = USERTOKENPREFIX + uid_str;
+    RedisMgr::GetInstance()->Del(token_key);
 }

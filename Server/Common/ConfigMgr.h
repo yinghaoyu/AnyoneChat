@@ -78,9 +78,15 @@ class ConfigMgr
     }
 
     std::string GetValue(const std::string& section, const std::string& key);
+    boost::filesystem::path GetFileOutPath();
+    void                    InitPath();
 
   private:
     ConfigMgr();
     // 存储section和key-value对的map
     std::map<std::string, SectionInfo> config_map_;
+    // static目录
+    boost::filesystem::path static_path_;
+    // bin输出目录
+    boost::filesystem::path bin_path_;
 };

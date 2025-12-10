@@ -1,0 +1,298 @@
+#include "LogicWorker.h"
+#include <jsoncpp/json/json.h>
+#include <jsoncpp/json/reader.h>
+#include <jsoncpp/json/value.h>
+#include "FileSystem.h"
+#include "CSession.h"
+#include "LogicSystem.h"
+#include "ConfigMgr.h"
+#include "RedisMgr.h"
+
+LogicWorker::LogicWorker() : _b_stop(false)
+{
+    RegisterCallBacks();
+
+    _work_thread = std::thread([this]() {
+        while (!_b_stop)
+        {
+            std::unique_lock<std::mutex> lock(_mtx);
+            _cv.wait(lock, [this]() {
+                if (_b_stop)
+                {
+                    return true;
+                }
+
+                if (_task_que.empty())
+                {
+                    return false;
+                }
+
+                return true;
+            });
+
+            if (_b_stop)
+            {
+                return;
+            }
+
+            auto task = _task_que.front();
+            task_callback(task);
+            _task_que.pop();
+        }
+    });
+}
+
+LogicWorker::~LogicWorker()
+{
+    _b_stop = true;
+    _cv.notify_one();
+    _work_thread.join();
+}
+
+void LogicWorker::PostTask(std::shared_ptr<LogicNode> task)
+{
+    std::lock_guard<std::mutex> lock(_mtx);
+    _task_que.push(task);
+    _cv.notify_one();
+}
+
+void LogicWorker::RegisterCallBacks()
+{
+    _fun_callbacks[ID_UPLOAD_FILE_REQ] = [this](shared_ptr<CSession> session,
+                                             const short&            msg_id,
+                                             const string&           msg_data) {
+        Json::Reader reader;
+        Json::Value  root;
+        reader.parse(msg_data, root);
+        auto md5        = root["md5"].asString();
+        auto seq        = root["seq"].asInt();
+        auto name       = root["name"].asString();
+        auto total_size = root["total_size"].asInt();
+        auto trans_size = root["trans_size"].asInt();
+        auto last       = root["last"].asInt();
+        auto file_data  = root["data"].asString();
+        auto file_path  = ConfigMgr::Inst().GetFileOutPath();
+        auto uid        = root["uid"].asInt();
+        // ת��Ϊ�ַ���
+        auto        uid_str       = std::to_string(uid);
+        auto        file_path_str = (file_path / uid_str / name).string();
+        Json::Value rtvalue;
+        Defer       defer([this, &rtvalue, session]() {
+            std::string return_str = rtvalue.toStyledString();
+            session->Send(return_str, ID_UPLOAD_FILE_RSP);
+        });
+
+        // ʹ�� std::hash ���ַ������й�ϣ
+        std::hash<std::string> hash_fn;
+        size_t                 hash_value = hash_fn(name);  // ���ɹ�ϣֵ
+        int                    index      = hash_value % FILE_WORKER_COUNT;
+        std::cout << "Hash value: " << hash_value << std::endl;
+
+        // ��һ����
+        if (seq == 1)
+        {
+            // �������ݴ洢
+            auto file_info            = std::make_shared<FileInfo>();
+            file_info->_file_path_str = file_path_str;
+            file_info->_name          = name;
+            file_info->_seq           = seq;
+            file_info->_total_size    = total_size;
+            file_info->_trans_size    = trans_size;
+            // todo... ���ڸ�Ϊredis,�Լ�mysql �־û��洢
+            LogicSystem::GetInstance()->AddMD5File(md5, file_info);
+        }
+        else
+        {
+            auto file_info = LogicSystem::GetInstance()->GetFileInfo(md5);
+            if (file_info == nullptr)
+            {
+                rtvalue["error"] = ErrorCodes::FileNotExists;
+                return;
+            }
+            file_info->_seq        = seq;
+            file_info->_trans_size = trans_size;
+        }
+
+        FileSystem::GetInstance()->PostMsgToQue(
+            std::make_shared<FileTask>(session,
+                uid,
+                file_path_str,
+                name,
+                seq,
+                total_size,
+                trans_size,
+                last,
+                file_data),
+            index);
+
+        rtvalue["error"]      = ErrorCodes::Success;
+        rtvalue["total_size"] = total_size;
+        rtvalue["seq"]        = seq;
+        rtvalue["name"]       = name;
+        rtvalue["trans_size"] = trans_size;
+        rtvalue["last"]       = last;
+        rtvalue["md5"]        = md5;
+    };
+
+    _fun_callbacks[ID_SYNC_FILE_REQ] = [this](shared_ptr<CSession> session,
+                                           const short&            msg_id,
+                                           const string&           msg_data) {
+        Json::Reader reader;
+        Json::Value  root;
+        reader.parse(msg_data, root);
+
+        Json::Value rtvalue;
+        Defer       defer([this, &rtvalue, session]() {
+            std::string return_str = rtvalue.toStyledString();
+            session->Send(return_str, ID_SYNC_FILE_RSP);
+        });
+
+        auto md5 = root["md5"].asString();
+
+        auto file = LogicSystem::GetInstance()->GetFileInfo(md5);
+        if (file == nullptr)
+        {
+            rtvalue["error"] = ErrorCodes::FileNotExists;
+            return;
+        }
+
+        rtvalue["error"]      = ErrorCodes::Success;
+        rtvalue["total_size"] = file->_total_size;
+        rtvalue["seq"]        = file->_seq;
+        rtvalue["name"]       = file->_name;
+        rtvalue["trans_size"] = file->_trans_size;
+        rtvalue["md5"]        = md5;
+    };
+
+    _fun_callbacks[ID_UPLOAD_HEAD_ICON_REQ] = [this](
+                                                  shared_ptr<CSession> session,
+                                                  const short&         msg_id,
+                                                  const string& msg_data) {
+        Json::Reader reader;
+        Json::Value  root;
+        reader.parse(msg_data, root);
+        auto md5        = root["md5"].asString();
+        auto seq        = root["seq"].asInt();
+        auto name       = root["name"].asString();
+        auto total_size = root["total_size"].asInt();
+        auto trans_size = root["trans_size"].asInt();
+        auto last       = root["last"].asInt();
+        auto file_data  = root["data"].asString();
+        auto uid        = root["uid"].asInt();
+        auto token      = root["token"].asString();
+        auto last_seq   = root["last_seq"].asInt();
+        // ת��Ϊ�ַ���
+        auto uid_str = std::to_string(uid);
+
+        auto        file_path     = ConfigMgr::Inst().GetFileOutPath();
+        auto        file_path_str = (file_path / uid_str / name).string();
+        Json::Value rtvalue;
+        Defer       defer([this, &rtvalue, session]() {
+            std::string return_str = rtvalue.toStyledString();
+            session->Send(return_str, ID_UPLOAD_HEAD_ICON_RSP);
+        });
+
+        // ��һ����У��һ��token�Ƿ����
+        if (seq == 1)
+        {
+            // ��redis��ȡ�û�token�Ƿ���ȷ
+            std::string uid_str     = std::to_string(uid);
+            std::string token_key   = USERTOKENPREFIX + uid_str;
+            std::string token_value = "";
+            bool success = RedisMgr::GetInstance()->Get(token_key, token_value);
+            if (!success)
+            {
+                rtvalue["error"] = ErrorCodes::UidInvalid;
+                return;
+            }
+
+            if (token_value != token)
+            {
+                rtvalue["error"] = ErrorCodes::TokenInvalid;
+                return;
+            }
+        }
+
+        // ʹ�� std::hash ���ַ������й�ϣ
+        std::hash<std::string> hash_fn;
+        size_t                 hash_value = hash_fn(name);  // ���ɹ�ϣֵ
+        int                    index      = hash_value % FILE_WORKER_COUNT;
+        std::cout << "Hash value: " << hash_value << std::endl;
+
+        // ��һ����
+        if (seq == 1)
+        {
+            // �������ݴ洢
+            auto file_info            = std::make_shared<FileInfo>();
+            file_info->_file_path_str = file_path_str;
+            file_info->_name          = name;
+            file_info->_seq           = seq;
+            file_info->_total_size    = total_size;
+            file_info->_trans_size    = trans_size;
+            // LogicSystem::GetInstance()->AddMD5File(md5, file_info);
+            // ��Ϊ��redis�洢
+            bool success =
+                RedisMgr::GetInstance()->SetFileInfo(name, file_info);
+            if (!success)
+            {
+                rtvalue["error"] = ErrorCodes::FileSaveRedisFailed;
+                return;
+            }
+        }
+        else
+        {
+            // auto file_info = LogicSystem::GetInstance()->GetFileInfo(md5);
+            // ��Ϊ��redis�м���
+            auto file_info = RedisMgr::GetInstance()->GetFileInfo(name);
+            if (file_info == nullptr)
+            {
+                rtvalue["error"] = ErrorCodes::FileNotExists;
+                return;
+            }
+            file_info->_seq        = seq;
+            file_info->_trans_size = trans_size;
+            bool success =
+                RedisMgr::GetInstance()->SetFileInfo(name, file_info);
+            if (!success)
+            {
+                rtvalue["error"] = ErrorCodes::FileSaveRedisFailed;
+                return;
+            }
+        }
+
+        FileSystem::GetInstance()->PostMsgToQue(
+            std::make_shared<FileTask>(session,
+                uid,
+                file_path_str,
+                name,
+                seq,
+                total_size,
+                trans_size,
+                last,
+                file_data),
+            index);
+
+        rtvalue["error"]      = ErrorCodes::Success;
+        rtvalue["total_size"] = total_size;
+        rtvalue["seq"]        = seq;
+        rtvalue["name"]       = name;
+        rtvalue["trans_size"] = trans_size;
+        rtvalue["last"]       = last;
+        rtvalue["md5"]        = md5;
+        rtvalue["uid"]        = uid;
+        rtvalue["last_seq"]   = last_seq;
+    };
+}
+
+void LogicWorker::task_callback(std::shared_ptr<LogicNode> task)
+{
+    cout << "recv_msg id  is " << task->_recvnode->msg_id_ << endl;
+    auto call_back_iter = _fun_callbacks.find(task->_recvnode->msg_id_);
+    if (call_back_iter == _fun_callbacks.end())
+    {
+        return;
+    }
+    call_back_iter->second(task->_session,
+        task->_recvnode->msg_id_,
+        std::string(task->_recvnode->data_, task->_recvnode->cur_len_));
+}

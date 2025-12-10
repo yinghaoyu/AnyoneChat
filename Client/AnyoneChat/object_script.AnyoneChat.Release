@@ -24,6 +24,7 @@ release/contactuserlist.o
 release/conuseritem.o
 release/customizeedit.o
 release/customizetextedit.o
+release/filetcpmgr.o
 release/findfaildlg.o
 release/findsuccessdlg.o
 release/friendinfopage.o
@@ -77,6 +78,7 @@ release/moc_contactuserlist.o
 release/moc_conuseritem.o
 release/moc_customizeedit.o
 release/moc_customizetextedit.o
+release/moc_filetcpmgr.o
 release/moc_findfaildlg.o
 release/moc_findsuccessdlg.o
 release/moc_friendinfopage.o

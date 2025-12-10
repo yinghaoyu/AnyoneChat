@@ -34,8 +34,11 @@ class MysqlDao
         std::vector<std::shared_ptr<ChatThreadInfo>>& threads, bool& loadMore,
         int& nextLastId);
     bool CreatePrivateChat(int user1_id, int user2_id, int& thread_id);
-	std::shared_ptr<PageResult> LoadChatMsg(int threadId, int lastId, int pageSize);
-	bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
+    std::shared_ptr<PageResult> LoadChatMsg(
+        int threadId, int lastId, int pageSize);
+    bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
+    bool UpdateHeadInfo(int uid, const std::string& icon);
+
   private:
     std::unique_ptr<MySQLPool> pool_;
 };

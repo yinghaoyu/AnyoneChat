@@ -16,6 +16,7 @@ mkdir -p bin
 mkdir -p bin/ChatServer
 mkdir -p bin/ChatServer2
 mkdir -p bin/GateServer
+mkdir -p bin/ResourceServer
 mkdir -p bin/StatusServer
 
 cp -f build/Server/StatusServer/StatusServer bin/StatusServer/StatusServer
@@ -29,3 +30,6 @@ cp -f Server/ChatServer/config.ini bin/ChatServer/config.ini
 
 cp -f build/Server/ChatServer/ChatServer bin/ChatServer2/ChatServer
 cp -f Server/ChatServer/config2.ini bin/ChatServer2/config.ini
+
+cp -f build/Server/ResourceServer/ResourceServer bin/ResourceServer/ResourceServer
+cp -f Server/ResourceServer/config.ini bin/ResourceServer/config.ini

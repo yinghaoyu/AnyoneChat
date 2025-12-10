@@ -28,6 +28,7 @@ private:
     bool enableOperation(bool);
     int _uid;
     QString _token;
+    std::shared_ptr<ServerInfo> _si;
     Notification* notification = Q_NULLPTR;
     QTimeLine* animation = Q_NULLPTR;
 private slots:
@@ -36,10 +37,12 @@ private slots:
     void slot_login_mod_finish(ReqId id, QString res, ErrorCodes err);
     void slot_tcp_con_finish(bool bsuccess);
     void slot_login_failed(int);
+    void slot_res_con_finish(bool bsuccess);
 signals:
     void switchRegister();
     void switchReset();
-    void sig_connect_tcp(ServerInfo);
+    void sig_connect_tcp(std::shared_ptr<ServerInfo>);
+    void sig_connect_res_server(std::shared_ptr<ServerInfo>);
 };
 
 #endif // LOGINDIALOG_H

@@ -964,3 +964,34 @@ bool MysqlDao::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
         return false;
     }
 }
+
+bool MysqlDao::UpdateHeadInfo(int uid, const std::string& icon)
+{
+
+    auto con = pool_->get();
+    if (con == nullptr)
+    {
+        LOG_ERROR("Failed to get connection from pool");
+        return false;
+    }
+
+    try
+    {
+        int ret = con->execStmt("UPDATE user SET icon = ? WHERE uid = ?;",
+            icon.c_str(),
+            (uint64_t)uid);
+
+        if (ret != 0)
+        {
+            LOG_ERROR("No user found with uid {}", uid);
+            return false;
+        }
+        LOG_INFO("UpdateHeadInfo success");
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        LOG_ERROR("Exception in UpdateHeadInfo: {}", e.what());
+        return false;
+    }
+}

@@ -59,3 +59,34 @@ std::string ConfigMgr::GetValue(
 
     return config_map_[section].GetValue(key);
 }
+
+boost::filesystem::path ConfigMgr::GetFileOutPath() { return static_path_; }
+
+void ConfigMgr::InitPath()
+{
+    // 获取当前工作目录
+    boost::filesystem::path current_path = boost::filesystem::current_path();
+    std::string             bindir    = config_map_["Output"].GetValue("Path");
+    std::string             staticdir = config_map_["Static"].GetValue("Path");
+    static_path_                      = current_path / bindir / staticdir;
+    bin_path_                         = current_path / bindir;
+
+    // 检查路径是否存在
+    if (!boost::filesystem::exists(static_path_))
+    {
+        // 如果路径不存在，创建它
+        if (boost::filesystem::create_directories(static_path_))
+        {
+            std::cout << "路径已成功创建: " << static_path_.string()
+                      << std::endl;
+        }
+        else
+        {
+            std::cerr << "创建路径失败: " << static_path_.string() << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "路径已存在: " << static_path_.string() << std::endl;
+    }
+}

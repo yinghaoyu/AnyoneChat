@@ -28,6 +28,7 @@ class TcpMgr:public QObject, public Singleton<TcpMgr>,
 public:
    ~ TcpMgr();
     void CloseConnection();
+    void SendData(ReqId reqId, QByteArray data);
 private:
     friend class Singleton<TcpMgr>;
     TcpMgr();
@@ -51,9 +52,11 @@ private:
     //是否正在发送
     bool _pending;
 public slots:
-    void slot_tcp_connect(ServerInfo);
+    void slot_tcp_close();
+    void slot_tcp_connect(std::shared_ptr<ServerInfo> si);
     void slot_send_data(ReqId reqId, QByteArray data);
 signals:
+    void sig_close();
     void sig_con_success(bool bsuccess);
     void sig_send_data(ReqId reqId, QByteArray data);
     void sig_swich_chatdlg();

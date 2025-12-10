@@ -90,3 +90,8 @@ bool MysqlMgr::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
 {
     return dao_.AddChatMsg(chat_datas);
 }
+
+bool MysqlMgr::UpdateUserIcon(int uid, const std::string& icon)
+{
+    return dao_.UpdateHeadInfo(uid, icon);
+}

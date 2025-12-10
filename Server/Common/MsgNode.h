@@ -7,6 +7,7 @@ using namespace std;
 using boost::asio::ip::tcp;
 
 class LogicSystem;
+class LogicWorker;
 class MsgNode
 {
   public:
@@ -36,6 +37,7 @@ class MsgNode
 class RecvNode : public MsgNode
 {
     friend class LogicSystem;
+    friend class LogicWorker;
 
   public:
     RecvNode(short max_len, short msg_id);
@@ -47,6 +49,7 @@ class RecvNode : public MsgNode
 class SendNode : public MsgNode
 {
     friend class LogicSystem;
+    friend class LogicWorker;
 
   public:
     SendNode(const char* msg, short max_len, short msg_id);

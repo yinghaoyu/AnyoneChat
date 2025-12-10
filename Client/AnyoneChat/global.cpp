@@ -1,6 +1,7 @@
 #include "global.h"
 #include <QEventLoop>
 #include <QTimer>
+#include <QUuid>
 
 std::function<void(QWidget*)> repolish =[](QWidget *w){
     w->style()->unpolish(w);
@@ -28,3 +29,15 @@ void delay_run(int msecs) {
     loop.exec();
 }
 
+QString generateUniqueFileName(const QString& originalName){
+
+     QString uuid = QUuid::createUuid().toString(QUuid::WithoutBraces);
+     QFileInfo fileInfo(originalName);
+     QString extension = fileInfo.suffix();
+     return uuid + (extension.isEmpty() ? "" : "." + extension);
+}
+
+QString generateUniqueIconName(){
+    QString uuid = QUuid::createUuid().toString(QUuid::WithoutBraces);
+    return uuid + ".png";
+}

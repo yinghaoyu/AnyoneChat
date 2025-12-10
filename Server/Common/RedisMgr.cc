@@ -3,6 +3,10 @@
 #include "DistLock.h"
 #include "const.h"
 
+#include <jsoncpp/json/json.h>
+#include <jsoncpp/json/reader.h>
+#include <jsoncpp/json/value.h>
+
 RedisMgr::RedisMgr()
 {
     auto& gCfgMgr = ConfigMgr::Inst();
@@ -70,6 +74,39 @@ bool RedisMgr::Set(const std::string& key, const std::string& value)
 
     std::cout << "Execut command [ SET " << key << "  " << value << " ] success"
               << std::endl;
+    return true;
+}
+
+bool RedisMgr::SetExp(
+    const std::string& key, const std::string& value, int expire_seconds)
+{
+    auto connect = con_pool_->get();
+    if (connect == nullptr)
+    {
+        return false;
+    }
+
+    // 使用SETEX命令，同时设置值和过期时间
+    auto reply = connect->cmd(
+        "SETEX %s %d %s", key.c_str(), expire_seconds, value.c_str());
+
+    if (NULL == reply)
+    {
+        std::cout << "Execute command [ SETEX " << key << " " << expire_seconds
+                  << " " << value << " ] failure!" << std::endl;
+        return false;
+    }
+
+    if (!(reply->type == REDIS_REPLY_STATUS &&
+            (strcmp(reply->str, "OK") == 0 || strcmp(reply->str, "ok") == 0)))
+    {
+        std::cout << "Execute command [ SETEX " << key << " " << expire_seconds
+                  << " " << value << " ] failure!" << std::endl;
+        return false;
+    }
+
+    std::cout << "Execute command [ SETEX " << key << " " << expire_seconds
+              << " " << value << " ] success!" << std::endl;
     return true;
 }
 
@@ -443,4 +480,62 @@ void RedisMgr::DelCount(std::string server_name)
     });
 
     RedisMgr::GetInstance()->HDel(LOGIN_COUNT, server_name);
+}
+
+bool RedisMgr::SetFileInfo(
+    const std::string& md5, std::shared_ptr<FileInfo> file_info)
+{
+    Json::Reader reader;
+    Json::Value  root;
+    root["file_path_str"] = file_info->_file_path_str;
+    root["name"]          = file_info->_name;
+    root["seq"]           = file_info->_seq;
+    root["total_size"]    = file_info->_total_size;
+    root["trans_size"]    = file_info->_trans_size;
+    auto file_info_str    = root.toStyledString();
+    auto redis_key        = "file_upload_" + md5;
+    bool success          = SetExp(redis_key, file_info_str, 3600);
+    return success;
+}
+
+std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& md5)
+{
+    auto        redis_key     = "file_upload_" + md5;
+    std::string file_info_str = "";
+
+    // �� Redis ��ȡ����
+    bool success = Get(redis_key, file_info_str);
+    if (!success || file_info_str.empty())
+    {
+        return nullptr;
+    }
+
+    // ���� JSON
+    Json::Reader reader;
+    Json::Value  root;
+    if (!reader.parse(file_info_str, root))
+    {
+        std::cout << "Failed to parse file info JSON for md5: " << md5
+                  << std::endl;
+        return nullptr;
+    }
+
+    // ���� FileInfo �����������
+    auto file_info = std::make_shared<FileInfo>();
+    try
+    {
+        file_info->_file_path_str = root["file_path_str"].asString();
+        file_info->_name          = root["name"].asString();
+        file_info->_seq           = root["seq"].asInt();
+        file_info->_total_size    = root["total_size"].asInt();
+        file_info->_trans_size    = root["trans_size"].asInt();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error parsing file info fields for md5 " << md5 << ": "
+                  << e.what() << std::endl;
+        return nullptr;
+    }
+
+    return file_info;
 }

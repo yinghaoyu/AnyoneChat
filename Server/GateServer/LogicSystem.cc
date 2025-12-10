@@ -5,6 +5,7 @@
 #include "RedisMgr.h"
 #include "StatusGrpcClient.h"
 #include "VerifyGrpcClient.h"
+#include "ConfigMgr.h"
 
 #include <jsoncpp/json/json.h>
 #include <jsoncpp/json/reader.h>
@@ -272,13 +273,18 @@ LogicSystem::LogicSystem()
         }
         LOG_INFO("gRPC get chat server success uid: {}", userInfo.uid_);
 
-        root["error"]       = 0;
-        root["email"]       = email;
-        root["uid"]         = userInfo.uid_;
-        root["token"]       = reply.token();
-        root["host"]        = reply.host();
-        root["port"]        = reply.port();
-        std::string jsonstr = root.toStyledString();
+        root["error"]        = 0;
+        root["email"]        = email;
+        root["uid"]          = userInfo.uid_;
+        root["token"]        = reply.token();
+        root["chathost"]     = reply.host();
+        root["chatport"]     = reply.port();
+        auto&       gCfgMgr  = ConfigMgr::Inst();
+        std::string res_port = gCfgMgr["ResServer"]["Port"];
+        std::string res_host = gCfgMgr["ResServer"]["Host"];
+        root["reshost"]      = res_host;
+        root["resport"]      = res_port;
+        std::string jsonstr  = root.toStyledString();
         beast::ostream(connection->response_.body()) << jsonstr;
         return true;
     });

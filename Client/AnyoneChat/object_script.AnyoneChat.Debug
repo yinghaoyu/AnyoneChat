@@ -24,6 +24,7 @@ debug/contactuserlist.o
 debug/conuseritem.o
 debug/customizeedit.o
 debug/customizetextedit.o
+debug/filetcpmgr.o
 debug/findfaildlg.o
 debug/findsuccessdlg.o
 debug/friendinfopage.o
@@ -77,6 +78,7 @@ debug/moc_contactuserlist.o
 debug/moc_conuseritem.o
 debug/moc_customizeedit.o
 debug/moc_customizetextedit.o
+debug/moc_filetcpmgr.o
 debug/moc_findfaildlg.o
 debug/moc_findsuccessdlg.o
 debug/moc_friendinfopage.o

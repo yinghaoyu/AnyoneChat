@@ -3,6 +3,8 @@
 #include "resetdialog.h"
 #include "tcpmgr.h"
 #include "usermgr.h"
+#include "filetcpmgr.h"
+
 #include <QLayout>
 #include <QMessageBox>
 
@@ -28,9 +30,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(TcpMgr::GetInstance().get(),&TcpMgr::sig_notify_offline, this, &MainWindow::SlotOffline);
     //连接服务器断开心跳超时或异常连接信息
     connect(TcpMgr::GetInstance().get(),&TcpMgr::sig_connection_closed, this, &MainWindow::SlotExcepConOffline);
-    //测试用
-    //emit TcpMgr::GetInstance()->sig_swich_chatdlg();
-
+    //连接资源服务器断开
+    connect(FileTcpMgr::GetInstance().get(), &FileTcpMgr::sig_connection_closed,
+        this, &MainWindow::SlotResServerConOffline);
 }
 
 MainWindow::~MainWindow()
@@ -126,9 +128,17 @@ void MainWindow::SlotExcepConOffline()
     // 使用静态方法直接弹出一个信息框
         QMessageBox::information(this, "下线提示", "心跳超时或临界异常，该终端下线！");
         TcpMgr::GetInstance()->CloseConnection();
+        FileTcpMgr::GetInstance()->CloseConnection();
         offlineLogin();
 }
 
+void MainWindow::SlotResServerConOffline(){
+    // 使用静态方法直接弹出一个信息框
+    QMessageBox::information(this, "下线提示", "与资源服务器断开连接！");
+    TcpMgr::GetInstance()->CloseConnection();
+    FileTcpMgr::GetInstance()->CloseConnection();
+    offlineLogin();
+}
 
 void MainWindow::offlineLogin(){
     if(_ui_status == LOGIN_UI){
