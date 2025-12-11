@@ -60,6 +60,8 @@ class LogicSystem : public Singleton<LogicSystem>
         SessionPtr session, const short& msg_id, const string& msg_data);
     void LoadChatMsg(std::shared_ptr<Session> session, const short& msg_id,
         const string& msg_data);
+    void DealChatImgMsg(std::shared_ptr<Session> session, const short& msg_id,
+        const string& msg_data);
     std::vector<std::thread>           threads_;
     std::vector<shared_ptr<LogicNode>> msg_que_;
     std::mutex                         mutex_;

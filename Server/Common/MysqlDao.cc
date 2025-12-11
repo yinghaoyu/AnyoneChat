@@ -965,6 +965,13 @@ bool MysqlDao::AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas)
     }
 }
 
+bool MysqlDao::AddChatMsg(std::shared_ptr<ChatMessage> chat_data)
+{
+    std::vector<std::shared_ptr<ChatMessage>> tmp;
+    tmp.emplace_back(chat_data);
+    return AddChatMsg(tmp);
+}
+
 bool MysqlDao::UpdateHeadInfo(int uid, const std::string& icon)
 {
 

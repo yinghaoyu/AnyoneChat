@@ -31,6 +31,7 @@ public:
     ~FileTcpMgr();
     void SendData(ReqId reqId, QByteArray data);
     void CloseConnection();
+    void SendDownloadInfo(std::shared_ptr<DownloadInfo> download);
 private:
     void initHandlers();
     explicit FileTcpMgr(QObject *parent = nullptr);
@@ -56,9 +57,10 @@ private:
     bool _pending;
 signals:
     void sig_close();
-     void sig_send_data(ReqId reqId, QByteArray data);
-     void sig_con_success(bool bsuccess);
-     void sig_connection_closed();
+    void sig_send_data(ReqId reqId, QByteArray data);
+    void sig_con_success(bool bsuccess);
+    void sig_connection_closed();
+    void sig_reset_label_icon(QString path);
 public slots:
     void slot_send_data(ReqId reqId, QByteArray data);
     void slot_tcp_connect(std::shared_ptr<ServerInfo> si);

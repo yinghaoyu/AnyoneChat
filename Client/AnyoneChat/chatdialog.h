@@ -49,7 +49,6 @@ private:
     ChatUIMode _mode;
     ChatUIMode _state;
     QWidget* _last_widget;
-    //QMap<int, QListWidgetItem*> _chat_items_added;
     QMap<int, QListWidgetItem*> _chat_thread_items;
     QMap<int, ChatPage*> _chat_pages; // threadId -> ChatPage*
     int _cur_chat_thread_id;
@@ -85,6 +84,8 @@ public slots:
         std::vector<std::shared_ptr<TextChatData>> msglists);
 
     void slot_add_chat_msg(int thread_id, std::vector<std::shared_ptr<TextChatData>> msglists);
+    void slot_add_img_msg(int thread_id, std::shared_ptr<ImgChatData> img_msg);
+    void slot_reset_icon(QString path);
 private slots:
 
 };

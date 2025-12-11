@@ -19,14 +19,12 @@ public:
     void SetChatData(std::shared_ptr<ChatThreadData> chat_data);
     void AppendChatMsg(std::shared_ptr<ChatDataBase> msg);
     void UpdateChatStatus(QString unique_id, int status);
+    void SetSelfIcon(ChatItemBase* pChatItem, QString icon);
 protected:
     void paintEvent(QPaintEvent *event) override;
     void closeEvent(QCloseEvent* event) override;
 private slots:
     void on_send_btn_clicked();
-
-    // void on_receive_btn_clicked();
-
 private:
     void clearItems();
     Ui::ChatPage *ui;

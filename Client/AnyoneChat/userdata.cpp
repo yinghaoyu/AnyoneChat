@@ -19,8 +19,8 @@ _msg_type(msg_type), _content(content), _send_uid(send_uid), _status(status), _c
 
 }
 
-ChatDataBase::ChatDataBase(QString unique_id, int thread_id, ChatFormType form_type,
-    ChatMsgType msg_type, QString content, int send_uid, int status, QString chat_time):_unique_id(unique_id),
+ChatDataBase::ChatDataBase(QString msg_id, int thread_id, ChatFormType form_type,
+    ChatMsgType msg_type, QString content, int send_uid, int status, QString chat_time):_unique_id(msg_id),
     _thread_id(thread_id), _form_type(form_type), 
     _msg_type(msg_type), _content(content), _send_uid(send_uid),_msg_id(0), _status(status), _chat_time(chat_time)
 {

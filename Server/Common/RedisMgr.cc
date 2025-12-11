@@ -498,6 +498,28 @@ bool RedisMgr::SetFileInfo(
     return success;
 }
 
+bool RedisMgr::SetDownLoadInfo(
+    const std::string& name, std::shared_ptr<FileInfo> file_info)
+{
+    Json::Reader reader;
+    Json::Value  root;
+    root["file_path_str"] = file_info->_file_path_str;
+    root["name"]          = file_info->_name;
+    root["seq"]           = file_info->_seq;
+    root["total_size"]    = file_info->_total_size;
+    root["trans_size"]    = file_info->_trans_size;
+    auto file_info_str    = root.toStyledString();
+    auto redis_key        = "file_download_" + name;
+    bool success          = SetExp(redis_key, file_info_str, 3600);
+    return success;
+}
+
+bool RedisMgr::DelDownLoadInfo(const std::string& name)
+{
+    auto redis_key = "file_download_" + name;
+    return Del(redis_key);
+}
+
 std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& name)
 {
     auto        redis_key     = "file_upload_" + name;
@@ -521,6 +543,48 @@ std::shared_ptr<FileInfo> RedisMgr::GetFileInfo(const std::string& name)
     }
 
     // ���� FileInfo �����������
+    auto file_info = std::make_shared<FileInfo>();
+    try
+    {
+        file_info->_file_path_str = root["file_path_str"].asString();
+        file_info->_name          = root["name"].asString();
+        file_info->_seq           = root["seq"].asInt();
+        file_info->_total_size    = root["total_size"].asInt();
+        file_info->_trans_size    = root["trans_size"].asInt();
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error parsing file info fields for name " << name << ": "
+                  << e.what() << std::endl;
+        return nullptr;
+    }
+
+    return file_info;
+}
+
+std::shared_ptr<FileInfo> RedisMgr::GetDownloadInfo(const std::string& name)
+{
+    auto        redis_key     = "file_download_" + name;
+    std::string file_info_str = "";
+
+    // 从 Redis 获取数据
+    bool success = Get(redis_key, file_info_str);
+    if (!success || file_info_str.empty())
+    {
+        return nullptr;
+    }
+
+    // 解析 JSON
+    Json::Reader reader;
+    Json::Value  root;
+    if (!reader.parse(file_info_str, root))
+    {
+        std::cout << "Failed to parse file info JSON for name: " << name
+                  << std::endl;
+        return nullptr;
+    }
+
+    // 创建 FileInfo 对象并填充数据
     auto file_info = std::make_shared<FileInfo>();
     try
     {

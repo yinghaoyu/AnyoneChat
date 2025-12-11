@@ -76,6 +76,7 @@ signals:
         std::vector<std::shared_ptr<TextChatData>> msg_list);
 
     void sig_chat_msg_rsp(int thread_id, std::vector<std::shared_ptr<TextChatData>> msg_list);
+    void sig_chat_img_rsp(int thread_id, std::shared_ptr<ImgChatData> msg_list);
 };
 
 #endif // TCPMGR_H

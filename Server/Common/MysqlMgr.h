@@ -39,6 +39,7 @@ class MysqlMgr : public Singleton<MysqlMgr>
     std::shared_ptr<PageResult> LoadChatMsg(
         int threadId, int lastId, int pageSize);
     bool AddChatMsg(std::vector<std::shared_ptr<ChatMessage>>& chat_datas);
+    bool AddChatMsg(std::shared_ptr<ChatMessage> chat_data);
     bool UpdateUserIcon(int uid, const std::string& icon);
 
   private:

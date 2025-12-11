@@ -4,6 +4,8 @@
 #include <memory>
 #include <singleton.h>
 #include "userdata.h"
+#include "global.h"
+#include <qlabel.h>
 #include <vector>
 #include <mutex>
 
@@ -49,9 +51,20 @@ public:
     std::shared_ptr<ChatThreadData> GetCurLoadData();
     std::shared_ptr<ChatThreadData> GetNextLoadData();
     //将md5和文件信息关联起来
-    void AddNameFile(QString name, std::shared_ptr<QFileInfo> file_info);
-
-    std::shared_ptr<QFileInfo> GetFileInfoByName(QString name);
+    void AddUploadFile(QString name, std::shared_ptr<QFileInfo> file_info);
+    //移除上传的文件信息
+    void RmvUploadFile(QString name);
+    //获取上传信息
+    std::shared_ptr<QFileInfo> GetUploadInfoByName(QString name);
+    bool IsDownLoading(QString name);
+    void AddDownloadFile(QString name, std::shared_ptr<DownloadInfo> file_info);
+    void RmvDownloadFile(QString name);
+    std::shared_ptr<DownloadInfo> GetDownloadInfo(QString name);
+    //添加资源路径到将要重置的Label集合
+    void AddLabelToReset(QString path, QLabel* label);
+    void ResetLabelIcon(QString path);
+    void AddTransFile(QString name, std::shared_ptr<MsgInfo> msg_info);
+    std::shared_ptr<MsgInfo> GetTransFileByName(QString name);
 private:
     UserMgr();
     std::shared_ptr<UserInfo> _user_info;
@@ -71,7 +84,13 @@ private:
     QMap<int, int> _uid_to_thread_id;
     std::mutex _mtx;
     //上传文件md5和文件信息关联 映射
-    QMap<QString, std::shared_ptr<QFileInfo> > _name_to_fileinfo;
+    QMap<QString, std::shared_ptr<QFileInfo> > _name_to_upload_info;
+    std::mutex _down_load_mtx;
+    //名字关联下载信息
+    QMap<QString, std::shared_ptr<DownloadInfo> > _name_to_download_info;
+    QHash<QString, QList<QLabel*>> _path_to_reset_labels;
+    QHash<QString, std::shared_ptr<MsgInfo> > _name_to_msg_info;
+    std::mutex _trans_mtx;
 public slots:
     void SlotAddFriendRsp(std::shared_ptr<AuthRsp> rsp);
     void SlotAddFriendAuth(std::shared_ptr<AuthInfo> auth);
