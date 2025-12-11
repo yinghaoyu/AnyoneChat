@@ -10,6 +10,7 @@
 
 FileWorker::FileWorker() : _b_stop(false)
 {
+    RegisterHandlers();
     _work_thread = std::thread([this]() {
         while (!_b_stop)
         {
@@ -33,9 +34,9 @@ FileWorker::FileWorker() : _b_stop(false)
                 break;
             }
 
-            auto task = _task_que.front();
+            auto task_call = _task_que.front();
             _task_que.pop();
-            task_callback(task);
+            task_call();
         }
     });
 }
@@ -47,11 +48,248 @@ FileWorker::~FileWorker()
     _work_thread.join();
 }
 
+void FileWorker::RegisterHandlers()
+{
+    _handlers[ID_UPLOAD_FILE_REQ] = [this](std::shared_ptr<FileTask> task) {
+        // 解码
+        std::string decoded = base64_decode(task->_file_data);
+
+        auto file_path_str = task->_path;
+        auto last          = task->_last;
+        // std::cout << "file_path_str is " << file_path_str << std::endl;
+
+        boost::filesystem::path file_path(file_path_str);
+        boost::filesystem::path dir_path = file_path.parent_path();
+        // 获取完整文件名（包含扩展名）
+        std::string filename = file_path.filename().string();
+        Json::Value result;
+        result["error"] = ErrorCodes::Success;
+
+        // Check if directory exists, if not, create it
+        if (!boost::filesystem::exists(dir_path))
+        {
+            if (!boost::filesystem::create_directories(dir_path))
+            {
+                std::cerr << "Failed to create directory: " << dir_path.string()
+                          << std::endl;
+                result["error"] = ErrorCodes::FileNotExists;
+                task->_callback(result);
+                return;
+            }
+        }
+
+        std::ofstream outfile;
+        // 第一个包
+        if (task->_seq == 1)
+        {
+            // 打开文件，如果存在则清空，不存在则创建
+            outfile.open(file_path_str, std::ios::binary | std::ios::trunc);
+        }
+        else
+        {
+            // 保存为文件
+            outfile.open(file_path_str, std::ios::binary | std::ios::app);
+        }
+
+        if (!outfile)
+        {
+            std::cerr << "无法打开文件进行写入。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+        outfile.write(decoded.data(), decoded.size());
+        if (!outfile)
+        {
+            std::cerr << "写入文件失败。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+        outfile.close();
+        if (last)
+        {
+            std::cout << "文件已成功保存为: " << task->_name << std::endl;
+        }
+
+        if (task->_callback)
+        {
+            task->_callback(result);
+        }
+    };
+
+    // 处理头像上传
+    _handlers[ID_UPLOAD_HEAD_ICON_REQ] = [this](
+                                             std::shared_ptr<FileTask> task) {
+        // 解码
+        std::string decoded = base64_decode(task->_file_data);
+
+        auto file_path_str = task->_path;
+        auto last          = task->_last;
+        // std::cout << "file_path_str is " << file_path_str << std::endl;
+
+        boost::filesystem::path file_path(file_path_str);
+        boost::filesystem::path dir_path = file_path.parent_path();
+        // 获取完整文件名（包含扩展名）
+        std::string filename = file_path.filename().string();
+        Json::Value result;
+        result["error"] = ErrorCodes::Success;
+
+        // Check if directory exists, if not, create it
+        if (!boost::filesystem::exists(dir_path))
+        {
+            if (!boost::filesystem::create_directories(dir_path))
+            {
+                std::cerr << "Failed to create directory: " << dir_path.string()
+                          << std::endl;
+                result["error"] = ErrorCodes::FileNotExists;
+                task->_callback(result);
+                return;
+            }
+        }
+
+        std::ofstream outfile;
+        // 第一个包
+        if (task->_seq == 1)
+        {
+            // 打开文件，如果存在则清空，不存在则创建
+            outfile.open(file_path_str, std::ios::binary | std::ios::trunc);
+        }
+        else
+        {
+            // 保存为文件
+            outfile.open(file_path_str, std::ios::binary | std::ios::app);
+        }
+
+        if (!outfile)
+        {
+            std::cerr << "无法打开文件进行写入。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+        outfile.write(decoded.data(), decoded.size());
+        if (!outfile)
+        {
+            std::cerr << "写入文件失败。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+
+        outfile.close();
+        if (last)
+        {
+            std::cout << "文件已成功保存为: " << task->_name << std::endl;
+            // 更新头像
+            MysqlMgr::GetInstance()->UpdateUserIcon(task->_uid, filename);
+            // 获取用户信息
+            auto user_info = MysqlMgr::GetInstance()->GetUser(task->_uid);
+            if (user_info == nullptr)
+            {
+                return;
+            }
+
+            // 将数据库内容写入redis缓存
+            Json::Value redis_root;
+            redis_root["uid"]    = task->_uid;
+            redis_root["pwd"]    = user_info->pwd_;
+            redis_root["name"]   = user_info->name_;
+            redis_root["email"]  = user_info->email_;
+            redis_root["nick"]   = user_info->nick_;
+            redis_root["desc"]   = user_info->desc_;
+            redis_root["sex"]    = user_info->sex_;
+            redis_root["icon"]   = user_info->icon_;
+            std::string base_key = USER_BASE_INFO + std::to_string(task->_uid);
+            RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
+        }
+
+        if (task->_callback)
+        {
+            task->_callback(result);
+        }
+    };
+
+    // 处理聊天图片上传
+    _handlers[ID_IMG_CHAT_UPLOAD_REQ] = [this](std::shared_ptr<FileTask> task) {
+        // 解码
+        std::string decoded = base64_decode(task->_file_data);
+
+        auto file_path_str = task->_path;
+        auto last          = task->_last;
+        // std::cout << "file_path_str is " << file_path_str << std::endl;
+
+        boost::filesystem::path file_path(file_path_str);
+        boost::filesystem::path dir_path = file_path.parent_path();
+        // 获取完整文件名（包含扩展名）
+        std::string filename = file_path.filename().string();
+        Json::Value result;
+        result["error"] = ErrorCodes::Success;
+
+        // Check if directory exists, if not, create it
+        if (!boost::filesystem::exists(dir_path))
+        {
+            if (!boost::filesystem::create_directories(dir_path))
+            {
+                std::cerr << "Failed to create directory: " << dir_path.string()
+                          << std::endl;
+                result["error"] = ErrorCodes::FileNotExists;
+                task->_callback(result);
+                return;
+            }
+        }
+
+        std::ofstream outfile;
+        // 第一个包
+        if (task->_seq == 1)
+        {
+            // 打开文件，如果存在则清空，不存在则创建
+            outfile.open(file_path_str, std::ios::binary | std::ios::trunc);
+        }
+        else
+        {
+            // 保存为文件
+            outfile.open(file_path_str, std::ios::binary | std::ios::app);
+        }
+
+        if (!outfile)
+        {
+            std::cerr << "无法打开文件进行写入。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+
+        outfile.write(decoded.data(), decoded.size());
+        if (!outfile)
+        {
+            std::cerr << "写入文件失败。" << std::endl;
+            result["error"] = ErrorCodes::FileWritePermissionFailed;
+            task->_callback(result);
+            return;
+        }
+
+        outfile.close();
+        if (last)
+        {
+            std::cout << "文件已成功保存为: " << task->_name << std::endl;
+            // todo...更新数据库聊天图像上传状态
+            // todo...通过grpc通知ChatServer
+        }
+
+        if (task->_callback)
+        {
+            task->_callback(result);
+        }
+    };
+}
+
 void FileWorker::PostTask(std::shared_ptr<FileTask> task)
 {
     {
         std::lock_guard<std::mutex> lock(_mtx);
-        _task_que.push(task);
+        // 借鉴python万物皆对象思想，构造伪闭包将函数对象扔到队列中
+        _task_que.push([task, this]() { task_callback(task); });
     }
 
     _cv.notify_one();
@@ -59,92 +297,13 @@ void FileWorker::PostTask(std::shared_ptr<FileTask> task)
 
 void FileWorker::task_callback(std::shared_ptr<FileTask> task)
 {
-    // ����
-    std::string decoded = base64_decode(task->_file_data);
-
-    auto file_path_str = task->_path;
-    auto last          = task->_last;
-    // std::cout << "file_path_str is " << file_path_str << std::endl;
-
-    boost::filesystem::path file_path(file_path_str);
-    boost::filesystem::path dir_path = file_path.parent_path();
-    // 获取完整文件名（包含扩展名）
-    std::string filename = file_path.filename().string();
-    Json::Value result;
-    result["error"] = ErrorCodes::Success;
-
-    // Check if directory exists, if not, create it
-    if (!boost::filesystem::exists(dir_path))
+    auto iter = _handlers.find(task->_msg_id);
+    if (iter == _handlers.end())
     {
-        if (!boost::filesystem::create_directories(dir_path))
-        {
-            std::cerr << "Failed to create directory: " << dir_path.string()
-                      << std::endl;
-            result["error"] = ErrorCodes::FileNotExists;
-            task->_callback(result);
-            return;
-        }
-    }
-
-    std::ofstream outfile;
-    // ��һ����
-    if (task->_seq == 1)
-    {
-        // ���ļ��������������գ��������򴴽�
-        outfile.open(file_path_str, std::ios::binary | std::ios::trunc);
-    }
-    else
-    {
-        // ����Ϊ�ļ�
-        outfile.open(file_path_str, std::ios::binary | std::ios::app);
-    }
-
-    if (!outfile)
-    {
-        std::cerr << "写入文件失败" << std::endl;
-        result["error"] = ErrorCodes::FileWritePermissionFailed;
-        task->_callback(result);
         return;
     }
 
-    outfile.write(decoded.data(), decoded.size());
-    if (!outfile)
-    {
-        std::cerr << "д���ļ�ʧ�ܡ�" << std::endl;
-        return;
-    }
-
-    outfile.close();
-    if (last)
-    {
-        std::cout << "�ļ��ѳɹ�����Ϊ: " << task->_name << std::endl;
-        // ����ͷ��
-        MysqlMgr::GetInstance()->UpdateUserIcon(task->_uid, filename);
-        // ��ȡ�û���Ϣ
-        auto user_info = MysqlMgr::GetInstance()->GetUser(task->_uid);
-        if (user_info == nullptr)
-        {
-            return;
-        }
-
-        // �����ݿ�����д��redis����
-        Json::Value redis_root;
-        redis_root["uid"]    = task->_uid;
-        redis_root["pwd"]    = user_info->pwd_;
-        redis_root["name"]   = user_info->name_;
-        redis_root["email"]  = user_info->email_;
-        redis_root["nick"]   = user_info->nick_;
-        redis_root["desc"]   = user_info->desc_;
-        redis_root["sex"]    = user_info->sex_;
-        redis_root["icon"]   = user_info->icon_;
-        std::string base_key = USER_BASE_INFO + std::to_string(task->_uid);
-        RedisMgr::GetInstance()->Set(base_key, redis_root.toStyledString());
-    }
-
-    if (task->_callback)
-    {
-        task->_callback(result);
-    }
+    iter->second(task);
 }
 
 DownloadWorker::DownloadWorker() : _b_stop(false)
@@ -293,7 +452,7 @@ void DownloadWorker::task_callback(std::shared_ptr<DownloadTask> task)
     // 定位到指定偏移量
     infile.seekg(offset);
 
-    // 读取最多2048字节
+    // 读取最多MAX_FILE_LEN字节
     char buffer[MAX_FILE_LEN];
     infile.read(buffer, MAX_FILE_LEN);
     // 获取read实际读取多少字节

@@ -7,14 +7,19 @@
 #include <string>
 #include <jsoncpp/json/value.h>
 #include <functional>
+#include <unordered_map>
+
+#include "const.h"
 
 class CSession;
 struct FileTask
 {
-    FileTask(std::shared_ptr<CSession> session, int uid, std::string path,
-        std::string name, int seq, int total_size, int trans_size, int last,
-        std::string file_data, std::function<void(const Json::Value&)> callback)
+    FileTask(std::shared_ptr<CSession> session, MSG_IDS msg_id, int uid,
+        std::string path, std::string name, int seq, int total_size,
+        int trans_size, int last, std::string file_data,
+        std::function<void(const Json::Value&)> callback)
         : _session(session),
+          _msg_id(msg_id),
           _uid(uid),
           _seq(seq),
           _path(path),
@@ -27,6 +32,7 @@ struct FileTask
     {}
     ~FileTask() {}
     std::shared_ptr<CSession>               _session;
+    MSG_IDS                                 _msg_id;
     int                                     _uid;
     int                                     _seq;
     std::string                             _path;
@@ -64,15 +70,18 @@ class FileWorker
   public:
     FileWorker();
     ~FileWorker();
+    void RegisterHandlers();
     void PostTask(std::shared_ptr<FileTask> task);
 
   private:
-    void        task_callback(std::shared_ptr<FileTask>);
-    std::thread _work_thread;
-    std::queue<std::shared_ptr<FileTask>> _task_que;
-    std::atomic<bool>                     _b_stop;
-    std::mutex                            _mtx;
-    std::condition_variable               _cv;
+    void task_callback(std::shared_ptr<FileTask>);
+    std::unordered_map<MSG_IDS, std::function<void(std::shared_ptr<FileTask>)>>
+                                      _handlers;
+    std::thread                       _work_thread;
+    std::queue<std::function<void()>> _task_que;
+    std::atomic<bool>                 _b_stop;
+    std::mutex                        _mtx;
+    std::condition_variable           _cv;
 };
 
 class DownloadWorker
